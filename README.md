@@ -5,7 +5,7 @@
 
 **The definitive diagnostic cockpit, time-travel player, git rollback assistant, context engineering breakdown, and cross-agent benchmarking suite for AI coding agents.**
 
-[![Visual Studio Marketplace Version](https://img.shields.io/badge/vs%20marketplace-v0.6.1-blue.svg)](https://marketplace.visualstudio.com/)
+[![Visual Studio Marketplace Version](https://img.shields.io/badge/vs%20marketplace-v0.7.0-blue.svg)](https://marketplace.visualstudio.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Engine: VS Code](https://img.shields.io/badge/vscode-%5E1.85.0-brightgreen.svg)](#requirements)
 [![Rating: 10.0](https://img.shields.io/badge/rating-10.0%2F10%20Universal-purple.svg)](#key-features)
@@ -141,12 +141,12 @@ However, each tool stores its execution traces in disparate, fragmented formats 
 ### 1. Installation
 Install directly via VS Code Extensions Marketplace, or install the `.vsix`:
 ```powershell
-code --install-extension antigravity-visualizer-0.6.1.vsix
+code --install-extension agentlens-0.7.0.vsix
 ```
 
 ### 2. Usage
 1. Click the **AgentLens icon** on the left Activity Bar.
-2. Select any conversation in the **Agent Sessions** panel (Antigravity, Claude, or Codex).
+2. Select any conversation in the **Agent Sessions** panel (Claude, Antigravity, or Codex).
 3. The interactive diagnostic dashboard opens in an editor tab.
 4. Explore the 13 diagnostic tabs:
    * **`🗺️ Cognitive Phases`**: Scalable grouped architecture lifecycle.
@@ -169,8 +169,8 @@ code --install-extension antigravity-visualizer-0.6.1.vsix
 
 | Command | Title | Description |
 | :--- | :--- | :--- |
-| `antigravity.openVisualizer` | **Open Visualizer Dashboard** | Opens the diagnostic dashboard for the active session. |
-| `antigravity.refreshSessions` | **Refresh Sessions** | Re-scans Antigravity, Claude, and Codex directories for new sessions. |
+| `agentlens.openVisualizer` | **Open AgentLens Dashboard** | Opens the diagnostic dashboard for the active session. |
+| `agentlens.refreshSessions` | **Refresh Agent Sessions** | Re-scans Claude, Antigravity, and Codex directories for new agent sessions. |
 
 ---
 

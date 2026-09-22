@@ -1,6 +1,21 @@
 # Change Log
 
-All notable changes to the "antigravity-visualizer" (AgentLens) extension will be documented in this file.
+All notable changes to the "agentlens" extension will be documented in this file.
+
+## [0.7.0] - The Universal AgentLens Rebrand Edition
+
+- **🌌 Complete Universal Rebrand**:
+  - Rebranded extension package from `antigravity-visualizer` to **`agentlens`** to accurately reflect first-class, equal support for **Anthropic Claude**, **Google Antigravity**, and **OpenAI Codex**.
+  - New primary command suite: `agentlens.openVisualizer` and `agentlens.refreshSessions` (with backward-compatible aliases for legacy configurations).
+  - Activity Bar view container renamed to `agentlens-sidebar` ("AgentLens (AI Observability)").
+  - Renamed official GitHub repository to [`https://github.com/akmalkhaniub/agentlens`](https://github.com/akmalkhaniub/agentlens).
+- **🛡️ 100% Air-Gapped & Offline Ready**:
+  - Bundled vendor dependencies (`mermaid.min.js`, `marked.min.js`) locally with strict Content-Security-Policy nonces.
+- **⚡ Categorized Navigation**:
+  - Added segmented category bar (`Execution & Flow`, `Code & Rollbacks`, `Diagnostics & Safety`, `Benchmarks & Models`) eliminating tab overflow.
+- **🎨 Native Theme & Tactile Polish**:
+  - Full theme compliance with dynamic VS Code variables for Light Modern, Dark+, and High-Contrast modes.
+  - In-place `✅ Copied!` button micro-interactions, modal `Esc` dismiss, and backdrop click handlers.
 
 ## [0.6.0] - Universal Multi-Agent Observability & Benchmarking Suite
 

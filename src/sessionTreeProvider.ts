@@ -20,8 +20,8 @@ export class SessionTreeItem extends vscode.TreeItem {
     }
 
     this.command = {
-      command: 'antigravity.openVisualizer',
-      title: 'Open Visualizer Dashboard',
+      command: 'agentlens.openVisualizer',
+      title: 'Open AgentLens Dashboard',
       arguments: [session.conversationId]
     };
   }

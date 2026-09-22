@@ -1,14 +1,14 @@
 {
-  "name": "antigravity-visualizer",
-  "displayName": "AgentLens: Universal AI Observability & Rollback (Antigravity, Claude, Codex)",
-  "description": "Universal AI Agent Observability, Time-Travel VCR Player, Git Rollback Assistant, Context Engineering breakdown, and Cross-Agent Benchmarking Suite for Google Antigravity, Claude, and Codex.",
-  "version": "0.6.1",
-  "publisher": "antigravity-tools",
+  "name": "agentlens",
+  "displayName": "AgentLens: Universal AI Observability & Rollback (Claude, Antigravity, Codex)",
+  "description": "Universal AI Agent Observability, Time-Travel VCR Player, Git Rollback Assistant, Context Engineering breakdown, and Cross-Agent Benchmarking Suite for Anthropic Claude, Google Antigravity, and OpenAI Codex.",
+  "version": "0.7.0",
+  "publisher": "akmalkhaniub",
   "license": "MIT",
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/akmalkhaniub/antigravity-visualizer"
+    "url": "https://github.com/akmalkhaniub/agentlens"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -19,9 +19,10 @@
     "Other"
   ],
   "keywords": [
-    "antigravity",
+    "agentlens",
     "claude",
     "claude-code",
+    "antigravity",
     "codex",
     "agent",
     "observability",
@@ -33,6 +34,9 @@
     "visualization"
   ],
   "activationEvents": [
+    "onView:agentlens.sessionList",
+    "onCommand:agentlens.openVisualizer",
+    "onCommand:agentlens.refreshSessions",
     "onView:antigravity.sessionList",
     "onCommand:antigravity.openVisualizer",
     "onCommand:antigravity.refreshSessions",
@@ -43,38 +47,48 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "antigravity-sidebar",
+          "id": "agentlens-sidebar",
           "title": "AgentLens (AI Observability)",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "antigravity-sidebar": [
+      "agentlens-sidebar": [
         {
-          "id": "antigravity.sessionList",
-          "name": "Agent Sessions (Antigravity • Claude • Codex)"
+          "id": "agentlens.sessionList",
+          "name": "Agent Sessions (Claude • Antigravity • Codex)"
         }
       ]
     },
     "commands": [
       {
+        "command": "agentlens.openVisualizer",
+        "title": "Open AgentLens Dashboard",
+        "category": "AgentLens"
+      },
+      {
+        "command": "agentlens.refreshSessions",
+        "title": "Refresh Agent Sessions",
+        "category": "AgentLens",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "antigravity.openVisualizer",
-        "title": "Open Visualizer Dashboard",
-        "category": "Antigravity"
+        "title": "Open Dashboard (Legacy)",
+        "category": "AgentLens"
       },
       {
         "command": "antigravity.refreshSessions",
-        "title": "Refresh Sessions",
-        "category": "Antigravity",
-        "icon": "$(refresh)"
+        "title": "Refresh Sessions (Legacy)",
+        "category": "AgentLens"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "antigravity.refreshSessions",
-          "when": "view == antigravity.sessionList",
+          "command": "agentlens.refreshSessions",
+          "when": "view == agentlens.sessionList",
           "group": "navigation"
         }
       ]

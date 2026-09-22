@@ -107,7 +107,7 @@ export class VisualizerPanel {
                 'Cancel'
               );
               if (choice === 'Execute Rollback') {
-                const term = vscode.window.activeTerminal || vscode.window.createTerminal('Antigravity Rollback');
+                const term = vscode.window.activeTerminal || vscode.window.createTerminal('AgentLens Rollback');
                 term.show();
                 term.sendText(message.command);
               }
@@ -117,7 +117,7 @@ export class VisualizerPanel {
           case 'exportPatchFile':
             try {
               const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-              const patchPath = path.join(workspaceFolder, `antigravity_revert_${this._currentConversationId?.substring(0, 8) || 'session'}.patch`);
+              const patchPath = path.join(workspaceFolder, `agentlens_revert_${this._currentConversationId?.substring(0, 8) || 'session'}.patch`);
               fs.writeFileSync(patchPath, message.patchContent || '', 'utf8');
               const action = await vscode.window.showInformationMessage(
                 `Revert patch exported to:\n${patchPath}`,
@@ -209,7 +209,7 @@ export class VisualizerPanel {
   private async handleExportHtmlReport(htmlContent: string) {
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-      const exportPath = path.join(workspaceFolder, `antigravity_report_${this._currentConversationId?.substring(0, 8) || 'session'}.html`);
+      const exportPath = path.join(workspaceFolder, `agentlens_report_${this._currentConversationId?.substring(0, 8) || 'session'}.html`);
       fs.writeFileSync(exportPath, htmlContent, 'utf8');
 
       const action = await vscode.window.showInformationMessage(
