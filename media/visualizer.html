@@ -214,6 +214,70 @@
       margin-bottom: 20px;
       overflow-x: auto;
     }
+    .chart-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .zoom-btn-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .zoom-indicator {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--accent);
+      min-width: 44px;
+      text-align: center;
+    }
+    .mermaid-container {
+      position: relative;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: auto;
+      padding: 20px;
+      min-height: 320px;
+      max-height: 580px;
+      cursor: grab;
+      user-select: none;
+    }
+    .mermaid-container:active {
+      cursor: grabbing;
+    }
+    .mermaid-wrapper {
+      transform-origin: top left;
+      transition: transform 0.15s ease-out;
+      display: inline-block;
+      min-width: 100%;
+    }
+    .mermaid-wrapper.fit-width {
+      transform: none !important;
+    }
+    .mermaid-wrapper.fit-width .mermaid svg {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      height: auto !important;
+    }
+    .mermaid {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .mermaid svg {
+      display: block;
+      margin: 0 auto;
+      min-width: 750px;
+      height: auto;
+    }
     .box-title { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 14px; }
     table {
       width: 100%;
@@ -776,8 +840,22 @@
     <!-- Tab 1: Cognitive Phases -->
     <div id="tab-phases" class="tab-pane active">
       <div class="chart-box">
-        <div class="box-title">Execution Lifecycle (Scalable Grouped Architecture)</div>
-        <div id="phaseMermaid" class="mermaid">flowchart LR\n  empty[Loading phases...]</div>
+        <div class="chart-toolbar">
+          <div class="box-title" style="margin-bottom: 0;">Execution Lifecycle (Cognitive Phases)</div>
+          <div class="zoom-btn-group">
+            <span style="font-size: 11px; color: var(--text-muted); margin-right: 4px;">Zoom:</span>
+            <button class="diff-btn" onclick="zoomDiagram('phaseWrapper', -0.2)" title="Zoom Out">🔍 -</button>
+            <span class="zoom-indicator" id="phaseZoomLevel">100%</span>
+            <button class="diff-btn" onclick="zoomDiagram('phaseWrapper', 0.2)" title="Zoom In">🔍 +</button>
+            <button class="diff-btn" onclick="resetDiagramZoom('phaseWrapper', 'phaseZoomLevel')" title="Reset to 100%">↺ 100%</button>
+            <button class="diff-btn" onclick="toggleDiagramFit('phaseWrapper', 'phaseZoomLevel')" title="Fit to width">⛶ Fit</button>
+          </div>
+        </div>
+        <div class="mermaid-container" id="phaseContainer">
+          <div class="mermaid-wrapper" id="phaseWrapper">
+            <div id="phaseMermaid" class="mermaid">flowchart LR\n  empty[Loading phases...]</div>
+          </div>
+        </div>
       </div>
 
       <div class="chart-box">
@@ -803,9 +881,23 @@
     <!-- Tab 2: Agent Handoffs -->
     <div id="tab-handoffs" class="tab-pane">
       <div class="chart-box">
-        <div class="box-title">Multi-Agent Task Switching Sequence</div>
+        <div class="chart-toolbar">
+          <div class="box-title" style="margin-bottom: 0;">Multi-Agent Task Switching Sequence</div>
+          <div class="zoom-btn-group">
+            <span style="font-size: 11px; color: var(--text-muted); margin-right: 4px;">Zoom:</span>
+            <button class="diff-btn" onclick="zoomDiagram('seqWrapper', -0.2)" title="Zoom Out">🔍 -</button>
+            <span class="zoom-indicator" id="seqZoomLevel">100%</span>
+            <button class="diff-btn" onclick="zoomDiagram('seqWrapper', 0.2)" title="Zoom In">🔍 +</button>
+            <button class="diff-btn" onclick="resetDiagramZoom('seqWrapper', 'seqZoomLevel')" title="Reset to 100%">↺ 100%</button>
+            <button class="diff-btn" onclick="toggleDiagramFit('seqWrapper', 'seqZoomLevel')" title="Fit to width">⛶ Fit</button>
+          </div>
+        </div>
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Visualizes how control passes between user, lead agent, and delegated subagent swarms.</p>
-        <div id="sequenceMermaid" class="mermaid">sequenceDiagram\n  actor User\n  participant Lead as Antigravity\n  User->>Lead: Loading handoffs...</div>
+        <div class="mermaid-container" id="seqContainer">
+          <div class="mermaid-wrapper" id="seqWrapper">
+            <div id="sequenceMermaid" class="mermaid">sequenceDiagram\n  actor User\n  participant Lead as Antigravity\n  User->>Lead: Loading handoffs...</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1188,7 +1280,34 @@
 
   <script>
     const vscode = acquireVsCodeApi();
-    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        fontSize: '15px',
+        fontFamily: 'Consolas, Monaco, "Courier New", monospace, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#38bdf8',
+        lineColor: '#94a3b8',
+        secondaryColor: '#0f172a',
+        tertiaryColor: '#1e293b'
+      },
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis',
+        nodeSpacing: 45,
+        rankSpacing: 45
+      },
+      sequence: {
+        useMaxWidth: false,
+        showSequenceNumbers: true,
+        actorFontSize: 14,
+        messageFontSize: 13,
+        noteFontSize: 13
+      }
+    });
 
     let currentData = null;
     let availableSessions = [];
@@ -1199,6 +1318,14 @@
     let playSpeed = 1;
     let activeStepFilter = 'all';
     let stepSearchQuery = '';
+    let seqMermaidRendered = false;
+    let renderedStepsCount = 35;
+    let cachedFilteredSteps = [];
+
+    const diagramZooms = {
+      phaseWrapper: 1.0,
+      seqWrapper: 1.0
+    };
 
     window.addEventListener('message', event => {
       const message = event.data;
@@ -1320,11 +1447,12 @@
         }).join('');
       }
 
-      // 2. Agent Handoffs Sequence
-      const seqEl = document.getElementById('sequenceMermaid');
-      seqEl.removeAttribute('data-processed');
-      seqEl.innerHTML = currentData.mermaidSequenceChart || 'sequenceDiagram\\n  User->>Lead: No handoffs';
-      mermaid.run({ nodes: [seqEl] });
+      // 2. Agent Handoffs Sequence (Lazy rendered on Tab 2 click)
+      seqMermaidRendered = false;
+      const activeTab = document.querySelector('.tab-pane.active');
+      if (activeTab && activeTab.id === 'tab-handoffs') {
+        renderSequenceMermaid();
+      }
 
       // 3. Rollback Assistant
       const rp = currentData.rollbackPlan || { modifiedFiles: [], fullRollbackCommand: '', filesCount: 0 };
@@ -1608,6 +1736,7 @@
 
     function setStepFilter(filter) {
       activeStepFilter = filter;
+      renderedStepsCount = 35;
       document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
       if (filter === 'all') document.getElementById('filterAll').classList.add('active');
       else if (filter === 'edits') document.getElementById('filterEdits').classList.add('active');
@@ -1619,6 +1748,7 @@
 
     function onSearchSteps(e) {
       stepSearchQuery = (e.target.value || '').toLowerCase().trim();
+      renderedStepsCount = 35;
       renderStepsList();
     }
 
@@ -1627,18 +1757,45 @@
       const stepsContainer = document.getElementById('stepsContainer');
       const allSteps = currentData.steps;
 
-      const filtered = allSteps.map((s, idx) => ({ step: s, originalIdx: idx })).filter(({ step }) => {
+      // Fast single-pass counting for filter badges
+      let editsCount = 0;
+      let cmdsCount = 0;
+      let warnsCount = 0;
+      let thinkCount = 0;
+      const incidents = currentData.diagnosticReport?.incidents || [];
+      const incidentSteps = new Set(incidents.map(i => i.stepIndex));
+
+      for (let i = 0; i < allSteps.length; i++) {
+        const s = allSteps[i];
+        const tcs = s.tool_calls || [];
+        let hasEdit = false;
+        let hasCmd = false;
+        for (let j = 0; j < tcs.length; j++) {
+          const name = tcs[j].name;
+          if (name === 'replace_file_content' || name === 'write_to_file') hasEdit = true;
+          if (name === 'run_command') hasCmd = true;
+        }
+        if (hasEdit) editsCount++;
+        if (hasCmd) cmdsCount++;
+        if (s.status === 'ERROR' || incidentSteps.has(s.step_index)) warnsCount++;
+        if (s.thinking) thinkCount++;
+      }
+
+      document.getElementById('countAll').innerText = allSteps.length;
+      document.getElementById('countEdits').innerText = editsCount;
+      document.getElementById('countCmds').innerText = cmdsCount;
+      document.getElementById('countWarns').innerText = warnsCount;
+      document.getElementById('countThink').innerText = thinkCount;
+
+      cachedFilteredSteps = allSteps.map((s, idx) => ({ step: s, originalIdx: idx })).filter(({ step }) => {
         if (activeStepFilter === 'edits') {
-          const hasEdit = (step.tool_calls || []).some(tc => tc.name === 'replace_file_content' || tc.name === 'write_to_file');
-          if (!hasEdit) return false;
+          return (step.tool_calls || []).some(tc => tc.name === 'replace_file_content' || tc.name === 'write_to_file');
         } else if (activeStepFilter === 'cmds') {
-          const hasCmd = (step.tool_calls || []).some(tc => tc.name === 'run_command');
-          if (!hasCmd) return false;
+          return (step.tool_calls || []).some(tc => tc.name === 'run_command');
         } else if (activeStepFilter === 'warns') {
-          const isWarn = step.status === 'ERROR' || (currentData.diagnosticReport?.incidents || []).some(inc => inc.stepIndex === step.step_index);
-          if (!isWarn) return false;
+          return step.status === 'ERROR' || incidentSteps.has(step.step_index);
         } else if (activeStepFilter === 'think') {
-          if (!step.thinking) return false;
+          return Boolean(step.thinking);
         }
 
         if (stepSearchQuery) {
@@ -1648,12 +1805,19 @@
         return true;
       });
 
-      if (!filtered.length) {
+      if (!cachedFilteredSteps.length) {
         stepsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No steps matched the selected filter or search.</p>';
         return;
       }
 
-      stepsContainer.innerHTML = filtered.map(({ step: s, originalIdx: idx }) => {
+      renderStepSlice();
+    }
+
+    function renderStepSlice() {
+      const stepsContainer = document.getElementById('stepsContainer');
+      const visible = cachedFilteredSteps.slice(0, renderedStepsCount);
+
+      const htmlChunks = visible.map(({ step: s, originalIdx: idx }) => {
         const isUser = s.source === 'USER_EXPLICIT' || s.type === 'USER_INPUT';
         const author = isUser ? 'User' : 'Agent';
         let body = '';
@@ -1718,7 +1882,31 @@
           });
         }
         return `<div class="step-card ${idx === currentScrubIndex ? 'scrub-active' : ''}" id="stepCard_${idx}"><div class="step-header"><span>Step #${s.step_index} - ${author}</span><span>${s.durationSec || 0}s &bull; ${(s.created_at || '').substring(11, 19)}</span></div><div class="step-body">${body}</div></div>`;
-      }).join('');
+      });
+
+      let footerHtml = '';
+      if (renderedStepsCount < cachedFilteredSteps.length) {
+        footerHtml = `
+          <div style="text-align: center; padding: 18px 12px; margin: 16px 0; background: rgba(0,0,0,0.25); border: 1px dashed var(--border); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+              Showing <strong>${visible.length}</strong> of <strong>${cachedFilteredSteps.length}</strong> steps
+            </div>
+            <button class="player-btn active" onclick="loadMoreSteps(50)" style="padding: 6px 16px; font-size: 12px;">
+              ⬇️ Load Next 50 Steps
+            </button>
+            <button class="player-btn" onclick="loadMoreSteps(${cachedFilteredSteps.length})" style="padding: 6px 14px; margin-left: 8px; font-size: 12px;">
+              Show All (${cachedFilteredSteps.length})
+            </button>
+          </div>
+        `;
+      }
+
+      stepsContainer.innerHTML = htmlChunks.join('') + footerHtml;
+    }
+
+    function loadMoreSteps(count) {
+      renderedStepsCount += count;
+      renderStepSlice();
     }
 
     /* Diff & Rollback Handlers */
@@ -1964,12 +2152,114 @@
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-      if (tabId === 'tab-leaderboard') {
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+      } else if (window.event?.target?.classList?.contains('tab-btn')) {
+        window.event.target.classList.add('active');
+      }
+
+      const pane = document.getElementById(tabId);
+      if (pane) pane.classList.add('active');
+
+      if (tabId === 'tab-handoffs' && !seqMermaidRendered) {
+        renderSequenceMermaid();
+      } else if (tabId === 'tab-leaderboard') {
         fetchLeaderboard();
       }
     }
+
+    function renderSequenceMermaid() {
+      if (!currentData) return;
+      const seqEl = document.getElementById('sequenceMermaid');
+      if (!seqEl) return;
+      seqEl.removeAttribute('data-processed');
+      seqEl.innerHTML = currentData.mermaidSequenceChart || 'sequenceDiagram\\n  User->>Lead: No handoffs';
+      try {
+        mermaid.run({ nodes: [seqEl] });
+        seqMermaidRendered = true;
+      } catch (err) {
+        console.error('Mermaid sequence diagram error:', err);
+      }
+    }
+
+    /* Interactive Diagram Zoom & Drag-to-Pan */
+    function zoomDiagram(wrapperId, delta) {
+      const cur = diagramZooms[wrapperId] || 1.0;
+      const next = Math.max(0.4, Math.min(3.0, Math.round((cur + delta) * 10) / 10));
+      diagramZooms[wrapperId] = next;
+      applyDiagramZoom(wrapperId);
+    }
+
+    function resetDiagramZoom(wrapperId, labelId) {
+      diagramZooms[wrapperId] = 1.0;
+      applyDiagramZoom(wrapperId);
+    }
+
+    function toggleDiagramFit(wrapperId, labelId) {
+      const wrapper = document.getElementById(wrapperId);
+      if (!wrapper) return;
+      const isFit = wrapper.classList.toggle('fit-width');
+      const lbl = document.getElementById(labelId);
+      if (isFit) {
+        if (lbl) lbl.innerText = 'FIT';
+      } else {
+        applyDiagramZoom(wrapperId);
+      }
+    }
+
+    function applyDiagramZoom(wrapperId) {
+      const wrapper = document.getElementById(wrapperId);
+      if (!wrapper) return;
+      wrapper.classList.remove('fit-width');
+      const scale = diagramZooms[wrapperId] || 1.0;
+      wrapper.style.transform = `scale(${scale})`;
+      const lblId = wrapperId === 'phaseWrapper' ? 'phaseZoomLevel' : 'seqZoomLevel';
+      const lbl = document.getElementById(lblId);
+      if (lbl) lbl.innerText = `${Math.round(scale * 100)}%`;
+    }
+
+    function setupPanContainer(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      let isDown = false;
+      let startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
+
+      container.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        isDown = true;
+        container.style.cursor = 'grabbing';
+        startX = e.pageX - container.offsetLeft;
+        startY = e.pageY - container.offsetTop;
+        scrollLeft = container.scrollLeft;
+        scrollTop = container.scrollTop;
+      });
+      container.addEventListener('mouseleave', () => {
+        isDown = false;
+        container.style.cursor = 'grab';
+      });
+      container.addEventListener('mouseup', () => {
+        isDown = false;
+        container.style.cursor = 'grab';
+      });
+      container.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const y = e.pageY - container.offsetTop;
+        const walkX = (x - startX) * 1.5;
+        const walkY = (y - startY) * 1.5;
+        container.scrollLeft = scrollLeft - walkX;
+        container.scrollTop = scrollTop - walkY;
+      });
+    }
+
+    // Initialize drag-to-pan on diagram viewports
+    setTimeout(() => {
+      setupPanContainer('phaseContainer');
+      setupPanContainer('seqContainer');
+    }, 100);
 
     /* Session Comparator Logic */
     function populateComparisonDropdown() {

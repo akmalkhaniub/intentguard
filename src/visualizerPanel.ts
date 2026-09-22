@@ -195,21 +195,23 @@ export class VisualizerPanel {
     );
 
     if (initialConversationId) {
-      setTimeout(() => this.loadSession(initialConversationId), 500);
+      this.loadSession(initialConversationId);
     } else {
-      setTimeout(async () => {
-        const sessions = await this.sessionManager.getSessions();
-        if (sessions.length > 0) {
-          this.loadSession(sessions[0].conversationId);
-        }
-      }, 500);
+      (async () => {
+        try {
+          const sessions = await this.sessionManager.getSessions();
+          if (sessions.length > 0) {
+            this.loadSession(sessions[0].conversationId, sessions);
+          }
+        } catch {}
+      })();
     }
   }
 
   private async handleExportHtmlReport(htmlContent: string) {
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-      const exportPath = path.join(workspaceFolder, `agentlens_report_${this._currentConversationId?.substring(0, 8) || 'session'}.html`);
+      const exportPath = path.join(workspaceFolder, `intentguard_report_${this._currentConversationId?.substring(0, 8) || 'session'}.html`);
       fs.writeFileSync(exportPath, htmlContent, 'utf8');
 
       const action = await vscode.window.showInformationMessage(
@@ -224,23 +226,25 @@ export class VisualizerPanel {
     }
   }
 
-  public async loadSession(conversationId: string) {
+  public async loadSession(conversationId: string, preloadedSessions?: any[]) {
     this._currentConversationId = conversationId;
     this._setupFileWatcher(conversationId);
 
     try {
       const detail = this.sessionManager.getSessionDetail(conversationId);
-      let allSessions: any[] = [];
-      try {
-        allSessions = await this.sessionManager.getSessions();
-      } catch {}
+      let allSessions = preloadedSessions;
+      if (!allSessions || allSessions.length === 0) {
+        try {
+          allSessions = await this.sessionManager.getSessions();
+        } catch {}
+      }
 
       this._panel.webview.postMessage({
         command: 'setSessionData',
         data: detail,
-        availableSessions: allSessions
+        availableSessions: allSessions || []
       });
-      this._panel.title = `Audit: ${detail.conversationId.substring(0, 8)}`;
+      this._panel.title = `IntentGuard: ${detail.conversationId.substring(0, 8)}`;
     } catch (err: any) {
       vscode.window.showErrorMessage(`Failed to load session: ${err.message}`);
     }

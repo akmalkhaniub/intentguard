@@ -168,6 +168,9 @@ export class SessionManager {
   private homeDir: string;
   private antigravityDir: string;
   private brainDir: string;
+  private _cachedSessions: SessionSummary[] | null = null;
+  private _cacheTimestamp: number = 0;
+  private readonly CACHE_TTL_MS: number = 10000;
 
   constructor() {
     this.homeDir = os.homedir();
@@ -179,7 +182,17 @@ export class SessionManager {
     return this.brainDir;
   }
 
-  public async getSessions(): Promise<SessionSummary[]> {
+  public clearCache(): void {
+    this._cachedSessions = null;
+    this._cacheTimestamp = 0;
+  }
+
+  public async getSessions(forceRefresh: boolean = false): Promise<SessionSummary[]> {
+    const now = Date.now();
+    if (!forceRefresh && this._cachedSessions && (now - this._cacheTimestamp) < this.CACHE_TTL_MS) {
+      return this._cachedSessions;
+    }
+
     let antigravitySessions: SessionSummary[] = [];
     try {
       const liveSessions = await this.fetchFromLocalServer();
@@ -197,12 +210,15 @@ export class SessionManager {
       s.modelName = 'Gemini 2.0 Flash';
     });
 
-    return AdapterRegistry.getInstance().getAllSessions(antigravitySessions as any);
+    const all = AdapterRegistry.getInstance().getAllSessions(antigravitySessions as any);
+    this._cachedSessions = all;
+    this._cacheTimestamp = now;
+    return all;
   }
 
   private fetchFromLocalServer(): Promise<SessionSummary[]> {
     return new Promise((resolve, reject) => {
-      const req = http.get('http://127.0.0.1:8520/api/conversations?limit=150', { timeout: 1500 }, res => {
+      const req = http.get('http://127.0.0.1:8520/api/conversations?limit=150', { timeout: 200 }, res => {
         if (res.statusCode !== 200) {
           return reject(new Error('Server responded with ' + res.statusCode));
         }
