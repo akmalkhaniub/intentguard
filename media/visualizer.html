@@ -367,8 +367,50 @@
       border-color: var(--accent);
       box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
     }
+    .timeline-track-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 220px;
+    }
+    .timeline-ticks-layer {
+      position: absolute;
+      top: -5px;
+      left: 0;
+      right: 0;
+      height: 14px;
+      pointer-events: none;
+    }
+    .timeline-tick {
+      position: absolute;
+      top: 3px;
+      width: 4px;
+      height: 7px;
+      border-radius: 2px;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.15s ease, height 0.15s ease;
+    }
+    .timeline-tick:hover {
+      transform: translateX(-50%) scale(1.6);
+      height: 11px;
+      z-index: 10;
+    }
+    .timeline-tick.tick-edit { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
+    .timeline-tick.tick-cmd { background: var(--amber); }
+    .timeline-tick.tick-think { background: var(--purple); }
+    .timeline-tick.tick-alert { background: var(--rose); box-shadow: 0 0 6px var(--rose); height: 9px; }
+    .timeline-tick.active-tick {
+      transform: translateX(-50%) scale(1.8) !important;
+      height: 12px !important;
+      box-shadow: 0 0 8px #fff !important;
+      outline: 1px solid #fff;
+      z-index: 15;
+    }
     .player-slider {
-      width: 180px;
+      width: 100%;
       accent-color: var(--accent);
       cursor: pointer;
       height: 4px;
@@ -1019,7 +1061,10 @@
       <button class="player-btn" onclick="scrubToEnd()" title="Jump to end">⏭</button>
     </div>
     <span style="font-weight: 700; color: var(--accent); white-space: nowrap;" id="scrubCounter">Step 0 / 0</span>
-    <input type="range" class="player-slider" id="timeTravelSlider" min="0" max="0" value="0" oninput="onSliderInput(event)">
+    <div class="timeline-track-container">
+      <div class="timeline-ticks-layer" id="timelineTicksLayer"></div>
+      <input type="range" class="player-slider" id="timeTravelSlider" min="0" max="0" value="0" oninput="onSliderInput(event)">
+    </div>
     <div class="player-status" id="scrubStatus">Agent timeline ready.</div>
     <div class="scrub-delta-pill" id="scrubDeltaPill" onclick="jumpToActiveDelta()" title="Click to inspect Code Delta in Transcript">
       ⚡ <span id="scrubDeltaText">Delta</span>
@@ -1603,6 +1648,7 @@
       slider.max = Math.max(0, maxSteps - 1);
       slider.value = currentScrubIndex;
       updateScrubUI();
+      renderTimelineTicks();
 
       // 1. Cognitive Phases
       const phaseEl = document.getElementById('phaseMermaid');
@@ -2284,6 +2330,57 @@
         activeCard.classList.add('scrub-active');
         activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+
+      // Highlight active timeline tick
+      document.querySelectorAll('.timeline-tick').forEach(t => t.classList.remove('active-tick'));
+      const activeTick = document.getElementById(`tick_${currentScrubIndex}`);
+      if (activeTick) activeTick.classList.add('active-tick');
+    }
+
+    function renderTimelineTicks() {
+      const container = document.getElementById('timelineTicksLayer');
+      if (!container || !currentData || !currentData.steps) return;
+      const steps = currentData.steps;
+      const total = steps.length;
+      if (total <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const incidents = (currentData.diagnosticReport?.incidents || []).map(i => i.stepIndex);
+      const spillSteps = (currentData.governanceAudit?.violations || []).map(v => v.stepIndex);
+
+      let html = '';
+      steps.forEach((step, idx) => {
+        let type = '';
+        let title = `Step #${step.step_index}`;
+
+        const isAlert = step.status === 'ERROR' || incidents.includes(step.step_index) || spillSteps.includes(step.step_index);
+        const hasEdit = (step.tool_calls || []).some(tc => tc.name === 'replace_file_content' || tc.name === 'write_to_file');
+        const hasCmd = (step.tool_calls || []).some(tc => tc.name === 'run_command');
+
+        if (isAlert) {
+          type = 'alert';
+          title += ': 🚨 Risk Alert / Scope Spill';
+        } else if (hasEdit) {
+          type = 'edit';
+          const tc = (step.tool_calls || []).find(t => t.name === 'replace_file_content' || t.name === 'write_to_file');
+          title += `: ✏️ Edit (${tc?.delta?.filename || 'code'})`;
+        } else if (hasCmd) {
+          type = 'cmd';
+          title += ': 🖥️ Terminal Command';
+        } else if (step.thinking) {
+          type = 'think';
+          title += ': 💭 Cognitive Evaluation';
+        } else {
+          return;
+        }
+
+        const pct = (idx / (total - 1)) * 100;
+        const isActive = (idx === currentScrubIndex) ? ' active-tick' : '';
+        html += `<div class="timeline-tick tick-${type}${isActive}" id="tick_${idx}" style="left: ${pct}%;" title="${escapeHtml(title)}" onclick="scrubStep(${idx})"></div>`;
+      });
+      container.innerHTML = html;
     }
 
     function togglePlay() {

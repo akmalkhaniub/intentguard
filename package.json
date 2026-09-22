@@ -2,7 +2,7 @@
   "name": "intentguard",
   "displayName": "IntentGuard: Autonomous AI Coding Control Plane & Rollback Suite",
   "description": "Real-time inline governance, blast-radius circuit breaker, intent adherence auditing, and 1-click rollback guard for Anthropic Claude Code, Google Antigravity, and OpenAI Codex.",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "publisher": "akmalkhaniub",
   "license": "MIT",
   "icon": "media/icon.png",

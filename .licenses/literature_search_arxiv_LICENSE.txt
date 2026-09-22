@@ -1,0 +1,4 @@
+arXiv API Terms of Use Notification
+Timestamp: 2026-09-23T00:04:45+05:00
+
+Please review the arXiv Terms of Use at https://info.arxiv.org/help/api/index.html and always check the license of the papers retrieved by the skill for any restrictions. Rate limit of maximum 1 request every 3 seconds is respected.
