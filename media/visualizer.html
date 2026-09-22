@@ -8,17 +8,23 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
-      --bg: var(--vscode-editor-background, #1e1e1e);
-      --bg-panel: var(--vscode-sideBar-background, #252526);
-      --border: var(--vscode-panel-border, #3c3c3c);
-      --text: var(--vscode-editor-foreground, #d4d4d4);
-      --text-muted: var(--vscode-descriptionForeground, #858585);
-      --accent: var(--vscode-textLink-foreground, #38bdf8);
-      --card-bg: var(--vscode-editorWidget-background, #2d2d2d);
-      --green: #4ade80;
-      --amber: #fbbf24;
-      --rose: #fb7185;
-      --purple: #c084fc;
+      --bg: var(--vscode-editor-background, #0b0f17);
+      --bg-panel: var(--vscode-sideBar-background, #111622);
+      --border: var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+      --text: var(--vscode-editor-foreground, #e2e8f0);
+      --text-muted: var(--vscode-descriptionForeground, #94a3b8);
+      --accent: #38bdf8;
+      --accent-hover: #7dd3fc;
+      --card-bg: rgba(22, 28, 42, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.12);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.14);
+      --rose: #f43f5e;
+      --rose-bg: rgba(244, 63, 94, 0.16);
+      --purple: #a855f7;
+      --glass-bg: rgba(15, 20, 32, 0.85);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -29,32 +35,230 @@
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-    .header {
-      padding: 12px 20px;
-      background: var(--bg-panel);
+
+    /* Modern Top Navigation Container */
+    .top-nav-container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    /* Command Header (48px) */
+    .command-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 0 18px;
+      height: 48px;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .title { font-size: 16px; font-weight: 700; color: var(--accent); }
-    .header-actions { display: flex; align-items: center; gap: 10px; }
-    .live-badge {
+
+    .brand-session-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+    .shield-icon {
+      font-size: 16px;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5));
+    }
+    .divider-v {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .session-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .session-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.2;
+    }
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    .session-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+
+    /* In-Flight Intent Capsule */
+    .ig-capsule {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
       font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .ig-capsule:hover {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(16, 185, 129, 0.5);
+      transform: translateY(-1px);
+    }
+    .ig-capsule.breaker-tripped {
+      background: rgba(244, 63, 94, 0.15) !important;
+      border-color: rgba(244, 63, 94, 0.4) !important;
+    }
+    .ig-capsule.spill-detected {
+      background: rgba(245, 158, 11, 0.15) !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+    }
+    .ig-capsule-status {
+      font-weight: 700;
+      color: #86efac;
+    }
+    .ig-capsule.breaker-tripped .ig-capsule-status { color: #fca5a5; }
+    .ig-capsule.spill-detected .ig-capsule-status { color: #fde68a; }
+    .ig-capsule-pill {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+      color: #fff;
+      font-size: 10px;
+    }
+    .ig-capsule-spill {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    .ig-quick-revert-btn {
+      background: rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      padding: 1px 7px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 2px;
+      transition: all 0.15s ease;
+    }
+    .ig-quick-revert-btn:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* Workspace Switcher (Segmented Control) */
+    .workspace-switcher {
+      display: flex;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .ws-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .ws-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .ws-btn.active {
+      color: #fff;
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+    .ws-icon {
+      font-size: 12px;
+    }
+
+    /* Header Actions */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
       font-weight: 700;
       color: var(--green);
-      background: rgba(74, 222, 128, 0.15);
-      padding: 4px 10px;
-      border-radius: 20px;
-      border: 1px solid rgba(74, 222, 128, 0.3);
+      background: var(--green-bg);
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      letter-spacing: 0.5px;
     }
     .pulse-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       background: var(--green);
       border-radius: 50%;
       animation: pulse 1.5s infinite;
@@ -65,130 +269,158 @@
       100% { transform: scale(0.9); opacity: 0.7; }
     }
 
-    /* Time-Travel VCR Player Bar */
-    .player-bar {
-      background: var(--vscode-editorWidget-background, #1e1e1e);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 20px;
+    /* Sub-Navigation Bar */
+    .subnav-bar {
       display: flex;
       align-items: center;
-      gap: 14px;
-      font-size: 12px;
+      padding: 0 18px;
+      height: 36px;
+      overflow-x: auto;
+      gap: 6px;
+      background: rgba(10, 14, 22, 0.4);
     }
-    .player-controls { display: flex; gap: 6px; }
-    .player-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
+    .subnav-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .subtab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
       padding: 4px 10px;
-      border-radius: 4px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+      transition: all 0.15s ease;
     }
-    .player-btn:hover { background: var(--border); }
-    .player-btn.active { background: var(--accent); color: var(--vscode-editor-background, #000); border-color: var(--accent); }
+    .subtab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .subtab-btn.active {
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.3);
+      font-weight: 700;
+    }
+
+    /* Floating Time-Travel VCR Player Bar Dock */
+    .floating-vcr-dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.15);
+      border-radius: 36px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 500;
+      font-size: 11px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 92vw;
+    }
+    .floating-vcr-dock:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(56, 189, 248, 0.3);
+    }
+    .floating-vcr-dock.hidden-dock {
+      transform: translateX(-50%) translateY(90px);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .vcr-drag-handle {
+      color: var(--text-muted);
+      font-size: 13px;
+      user-select: none;
+      display: flex;
+      align-items: center;
+    }
+    .player-controls { display: flex; gap: 4px; align-items: center; }
+    .player-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .player-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    .player-btn.active {
+      background: var(--accent);
+      color: #0b0f17;
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
     .player-slider {
-      flex: 1;
+      width: 180px;
       accent-color: var(--accent);
       cursor: pointer;
+      height: 4px;
     }
     .player-status {
       font-size: 11px;
       color: var(--text-muted);
       white-space: nowrap;
-      max-width: 300px;
+      max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .scrub-delta-pill {
-      background: rgba(56, 189, 248, 0.2);
-      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
       color: var(--accent);
-      padding: 3px 10px;
+      padding: 2px 8px;
       border-radius: 12px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: bold;
       display: none;
       cursor: pointer;
       white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .scrub-delta-pill:hover {
+      background: rgba(56, 189, 248, 0.25);
     }
     .scrub-delta-pill.visible {
       display: inline-flex;
       align-items: center;
       gap: 4px;
     }
-
-    /* Category Filter Bar */
-    .category-bar {
-      display: flex;
-      background: var(--bg-panel);
-      padding: 8px 16px 4px 16px;
-      gap: 8px;
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-    }
-    .cat-pill {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 12px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s ease;
-    }
-    .cat-pill:hover {
-      color: var(--text);
-      border-color: var(--accent);
-    }
-    .cat-pill.active {
-      background: rgba(56, 189, 248, 0.2);
-      border-color: var(--accent);
-      color: var(--accent);
-      font-weight: bold;
-    }
-
-    .tabs {
-      display: flex;
-      background: var(--bg-panel);
-      border-bottom: 1px solid var(--border);
-      padding: 0 16px;
-      overflow-x: auto;
-    }
-    .tab-btn {
-      padding: 9px 14px;
+    .vcr-close-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 600;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      white-space: nowrap;
-      transition: color 0.15s ease, border-color 0.15s ease;
+      font-size: 13px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s ease;
     }
-    .tab-btn.active {
-      color: var(--accent);
-      border-bottom: 2px solid var(--accent);
+    .vcr-close-btn:hover {
+      color: #fff;
     }
 
-    /* Accessibility focus rings & High-Contrast mode */
-    button:focus-visible, input:focus-visible, select:focus-visible {
-      outline: 2px solid var(--vscode-focusBorder, #007acc) !important;
-      outline-offset: 1px;
-    }
-    @media (forced-colors: active) {
-      .card, .chart-box, .player-bar, .tab-btn.active, .modal-content, .step-card {
-        border: 1px solid var(--vscode-contrastBorder, ButtonText) !important;
-      }
-    }
+    /* Content Area with Bottom Breathing Room */
     .content {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 20px 22px 85px 22px;
     }
     .tab-pane { display: none; }
     .tab-pane.active { display: block; }
@@ -200,18 +432,29 @@
     }
     .card {
       background: var(--card-bg);
-      padding: 14px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 16px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    .card-val { font-size: 20px; font-weight: 700; color: var(--accent); }
-    .card-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+    .card:hover {
+      border-color: rgba(56, 189, 248, 0.25);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+    .card-val { font-size: 22px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+    .card-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top: 5px; font-weight: 700; letter-spacing: 0.5px; }
     .chart-box {
       background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px 20px;
       margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
       overflow-x: auto;
     }
     .chart-toolbar {
@@ -657,134 +900,117 @@
       background: rgba(56, 189, 248, 0.1) !important;
     }
 
-    /* IntentGuard In-Flight Governance Banner */
-    .intentguard-banner {
-      background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.7) 100%);
-      border-bottom: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 10px 20px;
-      font-size: 12px;
-      transition: all 0.3s ease;
-    }
-    .intentguard-banner.breaker-tripped {
-      background: linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(30, 20, 20, 0.8) 100%) !important;
-      border-bottom: 1px solid rgba(239, 68, 68, 0.6) !important;
-    }
-    .intentguard-banner.spill-detected {
-      background: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(30, 25, 20, 0.7) 100%) !important;
-      border-bottom: 1px solid rgba(245, 158, 11, 0.5) !important;
-    }
-    .ig-main-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .ig-status-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .ig-status-icon {
-      font-size: 20px;
-    }
-    .ig-status-title {
-      font-weight: 700;
-      font-size: 13px;
-      color: #86efac;
-    }
-    .intentguard-banner.breaker-tripped .ig-status-title { color: #fca5a5; }
-    .intentguard-banner.spill-detected .ig-status-title { color: #fde68a; }
-    .ig-status-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .ig-metrics-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .ig-metric-pill {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 14px;
-      font-size: 11px;
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .ig-pill-lbl { color: var(--text-muted); }
-    .ig-pill-val { font-weight: bold; color: var(--text); }
-    .ig-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .ig-violations-box {
-      margin-top: 8px;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 4px;
-      font-size: 11px;
-      line-height: 1.5;
-    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div class="title" id="sessionTitle">IntentGuard Cockpit</div>
-        <span class="badge brand-badge-antigravity" id="agentBrandBadge">ANTIGRAVITY</span>
-        <span class="badge badge-cmd" id="agentModelBadge">Gemini 2.0 Flash</span>
+  <!-- Modern Top Navigation Container -->
+  <div class="top-nav-container">
+    <!-- Row 1: Command Header (48px) -->
+    <div class="command-header">
+      <div class="brand-session-group">
+        <div class="brand-logo" title="IntentGuard Autonomous AI Coding Control Plane">
+          <span class="shield-icon">🛡️</span>
+          <span>IntentGuard</span>
+        </div>
+        <div class="divider-v"></div>
+        <div class="session-info">
+          <div class="session-title-row">
+            <span class="title" id="sessionTitle">IntentGuard Cockpit</span>
+            <span class="badge brand-badge-antigravity" id="agentBrandBadge">ANTIGRAVITY</span>
+            <span class="badge badge-cmd" id="agentModelBadge">Gemini 2.0 Flash</span>
+          </div>
+          <div class="session-sub" id="sessionId">Select a session to begin deep audit</div>
+        </div>
+
+        <!-- In-Flight Governance Status Capsule -->
+        <div class="ig-capsule" id="intentGuardCapsule" onclick="switchWorkspace('workspace-safety', 'tab-plan')" title="Click to inspect Intent & Scope Spill Audit">
+          <span id="igStatusIcon">🛡️</span>
+          <span class="ig-capsule-status" id="igStatusTitle">In-Bounds</span>
+          <span class="ig-capsule-pill" id="igAdherenceVal">100%</span>
+          <span class="ig-capsule-spill" id="igSpillPill" style="display: none;">0 Spill</span>
+          <span class="ig-capsule-pill" id="igBreakerVal">Armed</span>
+          <button class="ig-quick-revert-btn" id="igRevertSpillBtn" onclick="event.stopPropagation(); revertUnplannedSpill();" style="display: none;" title="1-Click Git Restore on Scope Spill Files">⏪ Revert</button>
+        </div>
       </div>
-      <div style="font-size: 11px; color: var(--text-muted);" id="sessionId">Select a session to begin deep audit</div>
+
+      <!-- Segmented Workspace Switcher -->
+      <div class="workspace-switcher" role="tablist">
+        <button class="ws-btn active" id="wsBtnFlow" onclick="switchWorkspace('workspace-flow')">
+          <span class="ws-icon">⚡</span> Cockpit
+        </button>
+        <button class="ws-btn" id="wsBtnCode" onclick="switchWorkspace('workspace-code')">
+          <span class="ws-icon">⏪</span> Code & Rollback
+        </button>
+        <button class="ws-btn" id="wsBtnSafety" onclick="switchWorkspace('workspace-safety')">
+          <span class="ws-icon">🛡️</span> Intent & Safety
+        </button>
+        <button class="ws-btn" id="wsBtnBench" onclick="switchWorkspace('workspace-bench')">
+          <span class="ws-icon">📊</span> Economics
+        </button>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button class="action-btn" id="vcrToggleBtn" onclick="toggleFloatingVcr()" title="Toggle Floating Time-Travel VCR Scrubber">
+          <span>⏱️</span> <span>Scrubber</span>
+        </button>
+        <button class="action-btn" onclick="openForkModal()" title="1-Click Agent Fork & Hand-Off to Claude or Antigravity">
+          <span>🔄</span> <span>Hand-Off</span>
+        </button>
+        <button class="action-btn" onclick="exportStandaloneHtml()" title="Export self-contained HTML report for GitHub PRs">
+          <span>📤</span> <span>Export</span>
+        </button>
+        <div class="live-badge" title="Live Watcher Active">
+          <div class="pulse-dot"></div>
+          <span>LIVE</span>
+        </div>
+      </div>
     </div>
-    <div class="header-actions">
-      <button class="player-btn" onclick="openForkModal()" title="1-Click Agent Fork & Hand-Off to Claude or Antigravity">🔄 Hand-Off / Fork</button>
-      <button class="player-btn" onclick="exportStandaloneHtml()" title="Export self-contained HTML report for GitHub PRs">📤 Export PR Report (.html)</button>
-      <div class="live-badge">
-        <div class="pulse-dot"></div>
-        LIVE WATCHER ACTIVE
+
+    <!-- Row 2: Sub-Navigation Bar (Only 3-4 items per workspace) -->
+    <div class="subnav-bar">
+      <!-- Cockpit Sub-Views -->
+      <div class="subnav-group" id="subnav-flow">
+        <button class="subtab-btn active" data-tab="tab-phases" onclick="switchTab('tab-phases')">🗺️ Cognitive Lifecycle</button>
+        <button class="subtab-btn" data-tab="tab-handoffs" onclick="switchTab('tab-handoffs')">🔀 Agent Swarm Handoffs</button>
+        <button class="subtab-btn" data-tab="tab-time" onclick="switchTab('tab-time')">⏱️ Latency & Bottlenecks</button>
+        <button class="subtab-btn" data-tab="tab-transcript" onclick="switchTab('tab-transcript')">💬 Step Transcript</button>
+      </div>
+
+      <!-- Code & Rollback Sub-Views -->
+      <div class="subnav-group" id="subnav-code" style="display: none;">
+        <button class="subtab-btn" data-tab="tab-rollback" onclick="switchTab('tab-rollback')">⏪ Git Rollback Assistant</button>
+        <button class="subtab-btn" data-tab="tab-churn" onclick="switchTab('tab-churn')">🔥 File Churn Hotspots</button>
+        <button class="subtab-btn" data-tab="tab-artifacts" onclick="switchTab('tab-artifacts')">📑 Plan & Decoupled Logs</button>
+      </div>
+
+      <!-- Intent & Safety Sub-Views -->
+      <div class="subnav-group" id="subnav-safety" style="display: none;">
+        <button class="subtab-btn" data-tab="tab-plan" onclick="switchTab('tab-plan')">🎯 Plan vs. Reality (Scope Spill)</button>
+        <button class="subtab-btn" data-tab="tab-risk" onclick="switchTab('tab-risk')">🛡️ Risk & Sanity Scan</button>
+        <button class="subtab-btn" data-tab="tab-diag" onclick="switchTab('tab-diag')">🤖 AI Diagnostic Report</button>
+      </div>
+
+      <!-- Economics & Benchmarks Sub-Views -->
+      <div class="subnav-group" id="subnav-bench" style="display: none;">
+        <button class="subtab-btn" data-tab="tab-cost" onclick="switchTab('tab-cost')">💰 Tokens & Context Poisoning</button>
+        <button class="subtab-btn" data-tab="tab-compare" onclick="switchTab('tab-compare')">⚖️ Session Comparator</button>
+        <button class="subtab-btn" data-tab="tab-leaderboard" onclick="switchTab('tab-leaderboard')">🏆 Repo Leaderboard</button>
       </div>
     </div>
   </div>
 
-  <!-- IntentGuard In-Flight Governance Cockpit -->
-  <div class="intentguard-banner" id="intentGuardBanner" style="display: none;">
-    <div class="ig-main-row">
-      <div class="ig-status-group">
-        <span class="ig-status-icon" id="igStatusIcon">🛡️</span>
-        <div>
-          <div class="ig-status-title" id="igStatusTitle">IntentGuard: In-Bounds</div>
-          <div class="ig-status-sub" id="igStatusSub">Executing strictly within declared implementation plan boundary.</div>
-        </div>
-      </div>
-      <div class="ig-metrics-row">
-        <div class="ig-metric-pill">
-          <span class="ig-pill-lbl">🎯 Adherence:</span>
-          <span class="ig-pill-val" id="igAdherenceVal">100%</span>
-        </div>
-        <div class="ig-metric-pill" id="igSpillPill">
-          <span class="ig-pill-lbl">🚨 Spill:</span>
-          <span class="ig-pill-val" id="igSpillVal">0 Files</span>
-        </div>
-        <div class="ig-metric-pill" id="igBreakerPill">
-          <span class="ig-pill-lbl">⚡ Breaker:</span>
-          <span class="ig-pill-val" id="igBreakerVal">Armed</span>
-        </div>
-      </div>
-      <div class="ig-actions">
-        <button class="player-btn" id="igRevertSpillBtn" onclick="revertUnplannedSpill()" style="display: none; background: rgba(239, 68, 68, 0.25); color: #fca5a5; border-color: rgba(239, 68, 68, 0.5);" title="Execute git restore on unplanned out-of-scope files only">⏪ Revert Scope Spill</button>
-        <button class="player-btn" id="igInspectPlanBtn" onclick="switchTab('tab-plan')" title="Inspect Intent & Plan vs Reality">📋 Inspect Intent</button>
-      </div>
-    </div>
-    <div class="ig-violations-box" id="igViolationsBox" style="display: none;"></div>
+  <!-- Hidden elements kept for compatibility with renderIntentGuardBanner -->
+  <div id="intentGuardBanner" style="display: none;">
+    <div id="igStatusSub" style="display: none;"></div>
+    <div id="igSpillVal" style="display: none;"></div>
+    <div id="igInspectPlanBtn" style="display: none;"></div>
+    <div id="igViolationsBox" style="display: none;"></div>
   </div>
 
-  <!-- Time-Travel VCR Scrubber Bar -->
-  <div class="player-bar">
+  <!-- Floating Time-Travel VCR Scrubber Dock -->
+  <div class="floating-vcr-dock" id="floatingVcrDock">
+    <div class="vcr-drag-handle" title="Time-Travel VCR Player">⏱️</div>
     <div class="player-controls">
       <button class="player-btn" onclick="scrubStep(0)" title="Jump to start">⏮</button>
       <button class="player-btn" onclick="stepBackward()" title="Step back">◀</button>
@@ -792,7 +1018,7 @@
       <button class="player-btn" onclick="stepForward()" title="Step forward">▶</button>
       <button class="player-btn" onclick="scrubToEnd()" title="Jump to end">⏭</button>
     </div>
-    <span style="font-weight: bold; color: var(--accent);" id="scrubCounter">Step 0 / 0</span>
+    <span style="font-weight: 700; color: var(--accent); white-space: nowrap;" id="scrubCounter">Step 0 / 0</span>
     <input type="range" class="player-slider" id="timeTravelSlider" min="0" max="0" value="0" oninput="onSliderInput(event)">
     <div class="player-status" id="scrubStatus">Agent timeline ready.</div>
     <div class="scrub-delta-pill" id="scrubDeltaPill" onclick="jumpToActiveDelta()" title="Click to inspect Code Delta in Transcript">
@@ -803,37 +1029,7 @@
       <button class="player-btn" id="speed2x" onclick="setSpeed(2)">2x</button>
       <button class="player-btn" id="speed4x" onclick="setSpeed(4)">4x</button>
     </div>
-    <div class="shortcuts-hint" title="Keyboard controls active when window is focused">
-      ⌨️ <kbd>Space</kbd> Play &bull; <kbd>←</kbd><kbd>→</kbd> Step &bull; <kbd>1</kbd><kbd>2</kbd><kbd>4</kbd> Speed
-    </div>
-  </div>
-
-  <!-- Tab Categorization Filter Bar -->
-  <div class="category-bar">
-    <button class="cat-pill active" onclick="filterTabCategory('all', this)">All Views (13)</button>
-    <button class="cat-pill" onclick="filterTabCategory('flow', this)">⚡ Execution & Flow</button>
-    <button class="cat-pill" onclick="filterTabCategory('code', this)">⏪ Code & Rollbacks</button>
-    <button class="cat-pill" onclick="filterTabCategory('diag', this)">🤖 Diagnostics & Safety</button>
-    <button class="cat-pill" onclick="filterTabCategory('bench', this)">⚖️ Benchmarks & Models</button>
-  </div>
-
-  <div class="tabs" role="tablist">
-    <button class="tab-btn active" data-cat="flow" role="tab" onclick="switchTab('tab-phases')">🗺️ Cognitive Phases</button>
-    <button class="tab-btn" data-cat="flow" role="tab" onclick="switchTab('tab-handoffs')">🔀 Agent Handoffs</button>
-    <button class="tab-btn" data-cat="flow" role="tab" onclick="switchTab('tab-time')">⏱️ Time & Bottlenecks</button>
-    <button class="tab-btn" data-cat="flow" role="tab" onclick="switchTab('tab-transcript')">💬 Step Transcript</button>
-
-    <button class="tab-btn" data-cat="code" role="tab" onclick="switchTab('tab-rollback')">⏪ Git Rollback Assistant</button>
-    <button class="tab-btn" data-cat="code" role="tab" onclick="switchTab('tab-churn')">🔥 File Churn Matrix</button>
-    <button class="tab-btn" data-cat="code" role="tab" onclick="switchTab('tab-artifacts')">📑 Plan & Logs</button>
-
-    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-diag')">🤖 AI Diagnostic Report</button>
-    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-risk')">🛡️ Risk & Sanity Scan</button>
-    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-plan')">🎯 Plan vs. Reality</button>
-    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-cost')">💰 Tokens & Context</button>
-
-    <button class="tab-btn" data-cat="bench" role="tab" onclick="switchTab('tab-compare')">⚖️ Session Comparator</button>
-    <button class="tab-btn" data-cat="bench" role="tab" onclick="switchTab('tab-leaderboard')">🏆 Repo Leaderboard</button>
+    <button class="vcr-close-btn" onclick="toggleFloatingVcr()" title="Hide Scrubber Dock (Re-open anytime from top header)">✕</button>
   </div>
 
   <div class="content">
@@ -2149,17 +2345,71 @@
       vscode.postMessage({ command: 'openFile', path: path });
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    const tabWorkspaceMap = {
+      'tab-phases': 'workspace-flow',
+      'tab-handoffs': 'workspace-flow',
+      'tab-time': 'workspace-flow',
+      'tab-transcript': 'workspace-flow',
       
-      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
-      if (targetBtn) {
-        targetBtn.classList.add('active');
-      } else if (window.event?.target?.classList?.contains('tab-btn')) {
-        window.event.target.classList.add('active');
+      'tab-rollback': 'workspace-code',
+      'tab-churn': 'workspace-code',
+      'tab-artifacts': 'workspace-code',
+      
+      'tab-plan': 'workspace-safety',
+      'tab-risk': 'workspace-safety',
+      'tab-diag': 'workspace-safety',
+      
+      'tab-cost': 'workspace-bench',
+      'tab-compare': 'workspace-bench',
+      'tab-leaderboard': 'workspace-bench'
+    };
+
+    const workspaceDefaultTabs = {
+      'workspace-flow': 'tab-phases',
+      'workspace-code': 'tab-rollback',
+      'workspace-safety': 'tab-plan',
+      'workspace-bench': 'tab-cost'
+    };
+
+    function switchWorkspace(wsId, targetTabId) {
+      // 1. Update workspace segmented button active state
+      document.querySelectorAll('.ws-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.querySelector(`.ws-btn[onclick*="${wsId}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      // 2. Toggle subnav groups
+      const subnavId = 'subnav-' + wsId.replace('workspace-', '');
+      document.querySelectorAll('.subnav-group').forEach(grp => {
+        grp.style.display = (grp.id === subnavId) ? 'flex' : 'none';
+      });
+
+      // 3. Switch to desired or default tab
+      const tabToActivate = targetTabId || workspaceDefaultTabs[wsId] || 'tab-phases';
+      switchTab(tabToActivate, false);
+    }
+
+    function switchTab(tabId, autoSwitchWs = true) {
+      if (autoSwitchWs && tabWorkspaceMap[tabId]) {
+        const parentWs = tabWorkspaceMap[tabId];
+        const subnavId = 'subnav-' + parentWs.replace('workspace-', '');
+        document.querySelectorAll('.subnav-group').forEach(grp => {
+          grp.style.display = (grp.id === subnavId) ? 'flex' : 'none';
+        });
+        document.querySelectorAll('.ws-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.querySelector(`.ws-btn[onclick*="${parentWs}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
       }
 
+      // Update subtab buttons
+      document.querySelectorAll('.subtab-btn').forEach(b => {
+        b.classList.remove('active');
+        if (b.getAttribute('data-tab') === tabId || b.getAttribute('onclick')?.includes(tabId)) {
+          b.classList.add('active');
+        }
+      });
+
+      // Update tab panes
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       const pane = document.getElementById(tabId);
       if (pane) pane.classList.add('active');
 
@@ -2167,6 +2417,22 @@
         renderSequenceMermaid();
       } else if (tabId === 'tab-leaderboard') {
         fetchLeaderboard();
+      }
+    }
+
+    function toggleFloatingVcr() {
+      const dock = document.getElementById('floatingVcrDock');
+      const btn = document.getElementById('vcrToggleBtn');
+      if (!dock) return;
+      const isHidden = dock.classList.toggle('hidden-dock');
+      if (btn) {
+        if (isHidden) {
+          btn.style.opacity = '0.6';
+          btn.style.background = 'transparent';
+        } else {
+          btn.style.opacity = '1';
+          btn.style.background = 'rgba(56, 189, 248, 0.15)';
+        }
       }
     }
 
@@ -2477,33 +2743,12 @@
       }, 1500);
     }
 
-    function filterTabCategory(cat, btn) {
-      document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      let firstMatchingTabId = null;
-      let activeTabStillVisible = false;
-
-      tabBtns.forEach(t => {
-        const tCat = t.getAttribute('data-cat');
-        if (cat === 'all' || tCat === cat) {
-          t.style.display = 'inline-block';
-          if (!firstMatchingTabId) {
-            const m = t.getAttribute('onclick')?.match(/'([^']+)'/);
-            if (m) firstMatchingTabId = m[1];
-          }
-          if (t.classList.contains('active')) {
-            activeTabStillVisible = true;
-          }
-        } else {
-          t.style.display = 'none';
-        }
-      });
-
-      if (!activeTabStillVisible && firstMatchingTabId) {
-        switchTab(firstMatchingTabId);
-      }
+    function filterTabCategory(cat) {
+      if (cat === 'flow') switchWorkspace('workspace-flow');
+      else if (cat === 'code') switchWorkspace('workspace-code');
+      else if (cat === 'diag') switchWorkspace('workspace-safety');
+      else if (cat === 'bench') switchWorkspace('workspace-bench');
+      else switchWorkspace('workspace-flow');
     }
 
     function onModalOverlayClick(event) {
@@ -2572,68 +2817,95 @@
       return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
-    /* IntentGuard In-Flight Governance Banner & Spill Rollback */
+    /* IntentGuard In-Flight Governance Banner & Header Capsule */
     function renderIntentGuardBanner() {
+      const capsule = document.getElementById('intentGuardCapsule');
       const banner = document.getElementById('intentGuardBanner');
-      if (!banner) return;
-      const ga = currentData.governanceAudit;
+      const ga = currentData ? currentData.governanceAudit : null;
+
       if (!ga) {
-        banner.style.display = 'none';
+        if (capsule) capsule.style.display = 'none';
+        if (banner) banner.style.display = 'none';
         return;
       }
 
-      banner.style.display = 'block';
-      banner.className = 'intentguard-banner';
+      if (capsule) {
+        capsule.style.display = 'inline-flex';
+        capsule.className = 'ig-capsule';
+      }
+      if (banner) {
+        banner.style.display = 'block';
+        banner.className = 'intentguard-banner';
+      }
 
       const statusIcon = document.getElementById('igStatusIcon');
       const statusTitle = document.getElementById('igStatusTitle');
       const statusSub = document.getElementById('igStatusSub');
       const adhVal = document.getElementById('igAdherenceVal');
       const spillVal = document.getElementById('igSpillVal');
+      const spillPill = document.getElementById('igSpillPill');
       const breakerVal = document.getElementById('igBreakerVal');
       const revertBtn = document.getElementById('igRevertSpillBtn');
       const violationsBox = document.getElementById('igViolationsBox');
 
-      adhVal.innerText = `${ga.intentAdherenceRate}%`;
+      if (adhVal) adhVal.innerText = `${ga.intentAdherenceRate}%`;
       const spillCount = (ga.unplannedSpillFiles || []).length;
-      spillVal.innerText = `${spillCount} File${spillCount === 1 ? '' : 's'}`;
-      spillVal.style.color = spillCount > 0 ? '#fbbf24' : '#86efac';
-
-      const isTripped = ga.circuitBreaker && ga.circuitBreaker.tripped;
-      breakerVal.innerText = isTripped ? '⚡ TRIPPED' : 'ARMED';
-      breakerVal.style.color = isTripped ? '#f87171' : '#86efac';
-
-      if (isTripped) {
-        banner.classList.add('breaker-tripped');
-        statusIcon.innerText = '⚡';
-        statusTitle.innerText = 'IntentGuard: Circuit Breaker Tripped!';
-        statusSub.innerText = ga.circuitBreaker.reason || 'Excessive churn blast radius or destructive shrinkage detected.';
-        revertBtn.style.display = 'inline-block';
-        revertBtn.innerText = '⏪ Revert Blast Radius';
-      } else if (spillCount > 0) {
-        banner.classList.add('spill-detected');
-        statusIcon.innerText = '⚠️';
-        statusTitle.innerText = `IntentGuard: Scope Spill Detected (${spillCount} Unplanned Files)`;
-        statusSub.innerText = `Unannounced modifications: ${ga.unplannedSpillFiles.slice(0, 4).join(', ')}`;
-        revertBtn.style.display = 'inline-block';
-        revertBtn.innerText = `⏪ Revert Scope Spill (${spillCount})`;
-      } else {
-        statusIcon.innerText = '🛡️';
-        statusTitle.innerText = `IntentGuard: Fully In-Bounds (${ga.intentAdherenceRate}%)`;
-        statusSub.innerText = 'Agent operations strictly aligned with declared plan boundary.';
-        revertBtn.style.display = 'none';
+      if (spillVal) {
+        spillVal.innerText = `${spillCount} File${spillCount === 1 ? '' : 's'}`;
+        spillVal.style.color = spillCount > 0 ? '#fbbf24' : '#86efac';
+      }
+      if (spillPill) {
+        if (spillCount > 0) {
+          spillPill.style.display = 'inline-block';
+          spillPill.innerText = `${spillCount} Spill`;
+        } else {
+          spillPill.style.display = 'none';
+        }
       }
 
-      if (ga.violations && ga.violations.length > 0) {
-        violationsBox.style.display = 'block';
-        violationsBox.innerHTML = ga.violations.slice(0, 3).map(v => `
-          <div style="margin-bottom: 4px; display: flex; gap: 8px; align-items: center;">
-            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: ${v.severity === 'CRITICAL' ? '#f87171' : '#fbbf24'};">${v.severity}</span>
-            <span><strong>${escapeHtml(v.filePath)}</strong>: ${escapeHtml(v.reason)}</span>
-          </div>
-        `).join('');
+      const isTripped = ga.circuitBreaker && ga.circuitBreaker.tripped;
+      if (breakerVal) {
+        breakerVal.innerText = isTripped ? '⚡ TRIPPED' : 'Armed';
+        breakerVal.style.color = isTripped ? '#f87171' : '#86efac';
+      }
+
+      if (isTripped) {
+        if (capsule) capsule.classList.add('breaker-tripped');
+        if (statusIcon) statusIcon.innerText = '⚡';
+        if (statusTitle) statusTitle.innerText = 'Circuit Breaker Tripped!';
+        if (statusSub) statusSub.innerText = ga.circuitBreaker.reason || 'Excessive churn blast radius or destructive shrinkage detected.';
+        if (revertBtn) {
+          revertBtn.style.display = 'inline-block';
+          revertBtn.innerText = '⏪ Revert Blast Radius';
+        }
+      } else if (spillCount > 0) {
+        if (capsule) capsule.classList.add('spill-detected');
+        if (statusIcon) statusIcon.innerText = '⚠️';
+        if (statusTitle) statusTitle.innerText = `Scope Spill (${spillCount})`;
+        if (statusSub) statusSub.innerText = `Unannounced modifications: ${ga.unplannedSpillFiles.slice(0, 4).join(', ')}`;
+        if (revertBtn) {
+          revertBtn.style.display = 'inline-block';
+          revertBtn.innerText = `⏪ Revert (${spillCount})`;
+        }
       } else {
-        violationsBox.style.display = 'none';
+        if (statusIcon) statusIcon.innerText = '🛡️';
+        if (statusTitle) statusTitle.innerText = 'Fully In-Bounds';
+        if (statusSub) statusSub.innerText = 'Agent operations strictly aligned with declared plan boundary.';
+        if (revertBtn) revertBtn.style.display = 'none';
+      }
+
+      if (violationsBox) {
+        if (ga.violations && ga.violations.length > 0) {
+          violationsBox.style.display = 'block';
+          violationsBox.innerHTML = ga.violations.slice(0, 3).map(v => `
+            <div style="margin-bottom: 4px; display: flex; gap: 8px; align-items: center;">
+              <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: ${v.severity === 'CRITICAL' ? '#f87171' : '#fbbf24'};">${v.severity}</span>
+              <span><strong>${escapeHtml(v.filePath)}</strong>: ${escapeHtml(v.reason)}</span>
+            </div>
+          `).join('');
+        } else {
+          violationsBox.style.display = 'none';
+        }
       }
     }
 
