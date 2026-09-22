@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as http from 'http';
 import { AgentBrand, ContextEngineeringMetrics, AgentLeaderboard, AgentForkPacket } from './adapters/types';
 import { AdapterRegistry } from './adapters/adapterRegistry';
+import { IntentGovernor, GovernanceAudit, DeclaredIntent } from './core';
 
 export interface SessionSummary {
   conversationId: string;
@@ -152,6 +153,7 @@ export interface SessionDetail {
   diagnosticReport: DiagnosticReport;
   riskScan: RiskScanResult;
   planAudit: PlanAudit;
+  governanceAudit?: GovernanceAudit;
   rollbackPlan: RollbackPlan;
   contextMetrics?: ContextEngineeringMetrics;
   artifacts: {
@@ -865,8 +867,10 @@ export class SessionManager {
       hasCommandDoomLoop: riskFindings.some(f => f.category === 'COMMAND_DOOM_LOOP')
     };
 
-    // 7. Plan vs. Reality Audit
+    // 7. Plan vs. Reality Audit & IntentGuard Governance
     const planAudit = this.auditPlanVsReality(artifacts.implementationPlan, fileEvents);
+    const declaredIntent: DeclaredIntent = IntentGovernor.parsePlan(artifacts.implementationPlan);
+    const governanceAudit: GovernanceAudit = IntentGovernor.auditSession(declaredIntent, fileEvents, fileStatsList);
     const totalSessionTime = totalReasoningTime + totalCommandTime + totalFileEditTime + totalResearchTime;
 
     // 8. Rollback & Revert Plan
@@ -952,6 +956,7 @@ export class SessionManager {
       diagnosticReport: diagnosticReport,
       riskScan: riskScan,
       planAudit: planAudit,
+      governanceAudit: governanceAudit,
       rollbackPlan: rollbackPlan,
       contextMetrics: contextMetrics,
       artifacts: artifacts

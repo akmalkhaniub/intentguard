@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgentLens: Universal AI Observability & Rollback Cockpit</title>
+  <title>IntentGuard: Autonomous AI Coding Control Plane & Rollback Cockpit</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
@@ -592,13 +592,86 @@
       border: 2px solid var(--accent) !important;
       background: rgba(56, 189, 248, 0.1) !important;
     }
+
+    /* IntentGuard In-Flight Governance Banner */
+    .intentguard-banner {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.7) 100%);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 10px 20px;
+      font-size: 12px;
+      transition: all 0.3s ease;
+    }
+    .intentguard-banner.breaker-tripped {
+      background: linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(30, 20, 20, 0.8) 100%) !important;
+      border-bottom: 1px solid rgba(239, 68, 68, 0.6) !important;
+    }
+    .intentguard-banner.spill-detected {
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(30, 25, 20, 0.7) 100%) !important;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.5) !important;
+    }
+    .ig-main-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .ig-status-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ig-status-icon {
+      font-size: 20px;
+    }
+    .ig-status-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #86efac;
+    }
+    .intentguard-banner.breaker-tripped .ig-status-title { color: #fca5a5; }
+    .intentguard-banner.spill-detected .ig-status-title { color: #fde68a; }
+    .ig-status-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .ig-metrics-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .ig-metric-pill {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .ig-pill-lbl { color: var(--text-muted); }
+    .ig-pill-val { font-weight: bold; color: var(--text); }
+    .ig-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ig-violations-box {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <div>
       <div style="display: flex; align-items: center; gap: 8px;">
-        <div class="title" id="sessionTitle">Agent Diagnostic Suite</div>
+        <div class="title" id="sessionTitle">IntentGuard Cockpit</div>
         <span class="badge brand-badge-antigravity" id="agentBrandBadge">ANTIGRAVITY</span>
         <span class="badge badge-cmd" id="agentModelBadge">Gemini 2.0 Flash</span>
       </div>
@@ -612,6 +685,38 @@
         LIVE WATCHER ACTIVE
       </div>
     </div>
+  </div>
+
+  <!-- IntentGuard In-Flight Governance Cockpit -->
+  <div class="intentguard-banner" id="intentGuardBanner" style="display: none;">
+    <div class="ig-main-row">
+      <div class="ig-status-group">
+        <span class="ig-status-icon" id="igStatusIcon">🛡️</span>
+        <div>
+          <div class="ig-status-title" id="igStatusTitle">IntentGuard: In-Bounds</div>
+          <div class="ig-status-sub" id="igStatusSub">Executing strictly within declared implementation plan boundary.</div>
+        </div>
+      </div>
+      <div class="ig-metrics-row">
+        <div class="ig-metric-pill">
+          <span class="ig-pill-lbl">🎯 Adherence:</span>
+          <span class="ig-pill-val" id="igAdherenceVal">100%</span>
+        </div>
+        <div class="ig-metric-pill" id="igSpillPill">
+          <span class="ig-pill-lbl">🚨 Spill:</span>
+          <span class="ig-pill-val" id="igSpillVal">0 Files</span>
+        </div>
+        <div class="ig-metric-pill" id="igBreakerPill">
+          <span class="ig-pill-lbl">⚡ Breaker:</span>
+          <span class="ig-pill-val" id="igBreakerVal">Armed</span>
+        </div>
+      </div>
+      <div class="ig-actions">
+        <button class="player-btn" id="igRevertSpillBtn" onclick="revertUnplannedSpill()" style="display: none; background: rgba(239, 68, 68, 0.25); color: #fca5a5; border-color: rgba(239, 68, 68, 0.5);" title="Execute git restore on unplanned out-of-scope files only">⏪ Revert Scope Spill</button>
+        <button class="player-btn" id="igInspectPlanBtn" onclick="switchTab('tab-plan')" title="Inspect Intent & Plan vs Reality">📋 Inspect Intent</button>
+      </div>
+    </div>
+    <div class="ig-violations-box" id="igViolationsBox" style="display: none;"></div>
   </div>
 
   <!-- Time-Travel VCR Scrubber Bar -->
@@ -1166,6 +1271,9 @@
         modelEl.innerText = currentData.modelName || 'Gemini 2.0 Flash';
       }
 
+      // IntentGuard In-Flight Governance Banner
+      renderIntentGuardBanner();
+
       // Scrubber setup
       const maxSteps = (currentData.steps || []).length;
       const slider = document.getElementById('timeTravelSlider');
@@ -1370,26 +1478,42 @@
         `).join('');
       }
 
-      // 8. Plan vs. Reality
+      // 8. Plan vs. Reality & IntentGuard Governance Audit
       const pa = currentData.planAudit || {};
-      document.getElementById('planAdherence').innerText = pa.hasPlan ? `${pa.adherenceRate}%` : 'N/A';
+      const ga = currentData.governanceAudit;
+      const adherenceRate = ga ? ga.intentAdherenceRate : (pa.hasPlan ? pa.adherenceRate : 0);
+      document.getElementById('planAdherence').innerText = (pa.hasPlan || ga) ? `${adherenceRate}%` : 'N/A';
       document.getElementById('planPlannedCount').innerText = (pa.plannedFiles || []).length;
       document.getElementById('planExecutedCount').innerText = (pa.executedFiles || []).length;
-      document.getElementById('planUnplannedCount').innerText = (pa.unplannedEdits || []).length;
+      const spillList = ga ? ga.unplannedSpillFiles : (pa.unplannedEdits || []);
+      document.getElementById('planUnplannedCount').innerText = spillList.length;
 
       const pBody = document.getElementById('planAuditBody');
-      if (!pa.hasPlan) {
+      if (!pa.hasPlan && (!ga || !ga.plannedAndDone.length)) {
         pBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No implementation_plan.md found for this session.</td></tr>';
       } else {
         let rows = '';
-        (pa.plannedAndDone || []).forEach(f => {
-          rows += `<tr><td><span class="badge badge-new">✅ Executed</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #86efac;">Executed according to the implementation plan.</td></tr>`;
+        const doneList = ga ? ga.plannedAndDone : (pa.plannedAndDone || []);
+        const missedList = ga ? ga.plannedAndMissed : (pa.plannedAndMissed || []);
+
+        doneList.forEach(f => {
+          rows += `<tr><td><span class="badge badge-new">✅ Executed</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #86efac;">Executed strictly according to declared plan intent.</td></tr>`;
         });
-        (pa.unplannedEdits || []).forEach(f => {
-          rows += `<tr><td><span class="badge badge-edit">⚠️ Scope Creep</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #fde68a;">Modified by agent, but not listed in the original plan.</td></tr>`;
+        spillList.forEach(f => {
+          rows += `
+            <tr>
+              <td><span class="badge badge-edit">⚠️ Scope Spill</span></td>
+              <td><code>${escapeHtml(f)}</code></td>
+              <td>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #fde68a;">Modified by agent, but not declared in implementation plan.</span>
+                  <button class="diff-btn" onclick="runSingleRollback('${escapeJs(f)}')" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);">⏪ Revert Spill</button>
+                </div>
+              </td>
+            </tr>`;
         });
-        (pa.plannedAndMissed || []).forEach(f => {
-          rows += `<tr><td><span class="badge badge-cmd">❌ Missed</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #fca5a5;">Mentioned in plan, but agent stopped before modifying it.</td></tr>`;
+        missedList.forEach(f => {
+          rows += `<tr><td><span class="badge badge-cmd">❌ Missed</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #fca5a5;">Mentioned in plan, but agent concluded session before modifying it.</td></tr>`;
         });
         pBody.innerHTML = rows || '<tr><td colspan="3">No file deviations.</td></tr>';
       }
@@ -2156,6 +2280,91 @@
     function escapeJs(str) {
       if (!str) return '';
       return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    /* IntentGuard In-Flight Governance Banner & Spill Rollback */
+    function renderIntentGuardBanner() {
+      const banner = document.getElementById('intentGuardBanner');
+      if (!banner) return;
+      const ga = currentData.governanceAudit;
+      if (!ga) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      banner.style.display = 'block';
+      banner.className = 'intentguard-banner';
+
+      const statusIcon = document.getElementById('igStatusIcon');
+      const statusTitle = document.getElementById('igStatusTitle');
+      const statusSub = document.getElementById('igStatusSub');
+      const adhVal = document.getElementById('igAdherenceVal');
+      const spillVal = document.getElementById('igSpillVal');
+      const breakerVal = document.getElementById('igBreakerVal');
+      const revertBtn = document.getElementById('igRevertSpillBtn');
+      const violationsBox = document.getElementById('igViolationsBox');
+
+      adhVal.innerText = `${ga.intentAdherenceRate}%`;
+      const spillCount = (ga.unplannedSpillFiles || []).length;
+      spillVal.innerText = `${spillCount} File${spillCount === 1 ? '' : 's'}`;
+      spillVal.style.color = spillCount > 0 ? '#fbbf24' : '#86efac';
+
+      const isTripped = ga.circuitBreaker && ga.circuitBreaker.tripped;
+      breakerVal.innerText = isTripped ? '⚡ TRIPPED' : 'ARMED';
+      breakerVal.style.color = isTripped ? '#f87171' : '#86efac';
+
+      if (isTripped) {
+        banner.classList.add('breaker-tripped');
+        statusIcon.innerText = '⚡';
+        statusTitle.innerText = 'IntentGuard: Circuit Breaker Tripped!';
+        statusSub.innerText = ga.circuitBreaker.reason || 'Excessive churn blast radius or destructive shrinkage detected.';
+        revertBtn.style.display = 'inline-block';
+        revertBtn.innerText = '⏪ Revert Blast Radius';
+      } else if (spillCount > 0) {
+        banner.classList.add('spill-detected');
+        statusIcon.innerText = '⚠️';
+        statusTitle.innerText = `IntentGuard: Scope Spill Detected (${spillCount} Unplanned Files)`;
+        statusSub.innerText = `Unannounced modifications: ${ga.unplannedSpillFiles.slice(0, 4).join(', ')}`;
+        revertBtn.style.display = 'inline-block';
+        revertBtn.innerText = `⏪ Revert Scope Spill (${spillCount})`;
+      } else {
+        statusIcon.innerText = '🛡️';
+        statusTitle.innerText = `IntentGuard: Fully In-Bounds (${ga.intentAdherenceRate}%)`;
+        statusSub.innerText = 'Agent operations strictly aligned with declared plan boundary.';
+        revertBtn.style.display = 'none';
+      }
+
+      if (ga.violations && ga.violations.length > 0) {
+        violationsBox.style.display = 'block';
+        violationsBox.innerHTML = ga.violations.slice(0, 3).map(v => `
+          <div style="margin-bottom: 4px; display: flex; gap: 8px; align-items: center;">
+            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: ${v.severity === 'CRITICAL' ? '#f87171' : '#fbbf24'};">${v.severity}</span>
+            <span><strong>${escapeHtml(v.filePath)}</strong>: ${escapeHtml(v.reason)}</span>
+          </div>
+        `).join('');
+      } else {
+        violationsBox.style.display = 'none';
+      }
+    }
+
+    function revertUnplannedSpill() {
+      if (!currentData || !currentData.governanceAudit) return;
+      const ga = currentData.governanceAudit;
+      let filesToRevert = ga.unplannedSpillFiles || [];
+      if (ga.circuitBreaker && ga.circuitBreaker.tripped && ga.circuitBreaker.destructiveTruncations) {
+        filesToRevert = Array.from(new Set([...filesToRevert, ...ga.circuitBreaker.destructiveTruncations]));
+      }
+
+      if (!filesToRevert.length) {
+        alert('No scope spill files identified to revert.');
+        return;
+      }
+
+      const restoreCmd = `git restore ${filesToRevert.map(f => `"${f}"`).join(' ')}`;
+      vscode.postMessage({
+        command: 'runInTerminal',
+        command: restoreCmd
+      });
     }
   </script>
 

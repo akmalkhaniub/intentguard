@@ -1,0 +1,35 @@
+name: 'IntentGuard Agent PR Gatekeeper'
+description: 'Autonomous AI coding control plane: enforces declared plan boundary, detects scope spill, monitors blast-radius circuit breakers, and generates PR scorecards.'
+author: 'akmalkhaniub'
+inputs:
+  plan_path:
+    description: 'Path to implementation_plan.md or plan markdown'
+    required: false
+    default: 'implementation_plan.md'
+  fail_on_circuit_break:
+    description: 'Fail CI if blast-radius circuit breaker is tripped'
+    required: false
+    default: 'true'
+  fail_on_spill:
+    description: 'Fail CI if out-of-scope requirement spill is detected'
+    required: false
+    default: 'false'
+  base_branch:
+    description: 'Base branch to compare changes against'
+    required: false
+    default: 'origin/main'
+outputs:
+  adherence_score:
+    description: 'Intent adherence percentage (0-100)'
+  circuit_tripped:
+    description: 'Whether the circuit breaker was tripped (true/false)'
+  spill_count:
+    description: 'Number of out-of-scope files modified'
+  scorecard_markdown:
+    description: 'Markdown formatted audit report'
+runs:
+  using: 'node20'
+  main: 'dist/action.js'
+branding:
+  icon: 'shield'
+  color: 'blue'

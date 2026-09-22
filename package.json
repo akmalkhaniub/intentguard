@@ -1,17 +1,21 @@
 {
-  "name": "agentlens",
-  "displayName": "AgentLens: Universal AI Observability & Rollback (Claude, Antigravity, Codex)",
-  "description": "Universal AI Agent Observability, Time-Travel VCR Player, Git Rollback Assistant, Context Engineering breakdown, and Cross-Agent Benchmarking Suite for Anthropic Claude, Google Antigravity, and OpenAI Codex.",
-  "version": "0.7.0",
+  "name": "intentguard",
+  "displayName": "IntentGuard: Autonomous AI Coding Control Plane & Rollback Suite",
+  "description": "Real-time inline governance, blast-radius circuit breaker, intent adherence auditing, and 1-click rollback guard for Anthropic Claude Code, Google Antigravity, and OpenAI Codex.",
+  "version": "0.8.0",
   "publisher": "akmalkhaniub",
   "license": "MIT",
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/akmalkhaniub/agentlens"
+    "url": "https://github.com/akmalkhaniub/intentguard"
   },
   "engines": {
     "vscode": "^1.85.0"
+  },
+  "bin": {
+    "intentguard": "./dist/cli.js",
+    "ig": "./dist/cli.js"
   },
   "categories": [
     "Visualization",
@@ -19,6 +23,7 @@
     "Other"
   ],
   "keywords": [
+    "intentguard",
     "agentlens",
     "claude",
     "claude-code",
@@ -26,14 +31,17 @@
     "codex",
     "agent",
     "observability",
-    "context-engineering",
+    "governance",
+    "circuit-breaker",
     "git-rollback",
     "benchmarks",
     "gemini",
-    "transcript",
-    "visualization"
+    "transcript"
   ],
   "activationEvents": [
+    "onView:intentguard.sessionList",
+    "onCommand:intentguard.openVisualizer",
+    "onCommand:intentguard.refreshSessions",
     "onView:agentlens.sessionList",
     "onCommand:agentlens.openVisualizer",
     "onCommand:agentlens.refreshSessions",
@@ -47,31 +55,41 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agentlens-sidebar",
-          "title": "AgentLens (AI Observability)",
+          "id": "intentguard-sidebar",
+          "title": "IntentGuard",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "agentlens-sidebar": [
+      "intentguard-sidebar": [
         {
-          "id": "agentlens.sessionList",
-          "name": "Agent Sessions (Claude • Antigravity • Codex)"
+          "id": "intentguard.sessionList",
+          "name": "Agent Sessions & Intent Guard"
         }
       ]
     },
     "commands": [
       {
+        "command": "intentguard.openVisualizer",
+        "title": "Open IntentGuard Cockpit",
+        "category": "IntentGuard"
+      },
+      {
+        "command": "intentguard.refreshSessions",
+        "title": "Refresh Agent Sessions",
+        "category": "IntentGuard",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "agentlens.openVisualizer",
-        "title": "Open AgentLens Dashboard",
+        "title": "Open Dashboard (Legacy)",
         "category": "AgentLens"
       },
       {
         "command": "agentlens.refreshSessions",
-        "title": "Refresh Agent Sessions",
-        "category": "AgentLens",
-        "icon": "$(refresh)"
+        "title": "Refresh Sessions (Legacy)",
+        "category": "AgentLens"
       },
       {
         "command": "antigravity.openVisualizer",
@@ -87,7 +105,12 @@
     "menus": {
       "view/title": [
         {
-          "command": "agentlens.refreshSessions",
+          "command": "intentguard.refreshSessions",
+          "when": "view == intentguard.sessionList",
+          "group": "navigation"
+        },
+        {
+          "command": "intentguard.refreshSessions",
           "when": "view == agentlens.sessionList",
           "group": "navigation"
         }
@@ -96,7 +119,10 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "compile:ext": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "compile:cli": "esbuild ./src/cli/index.ts --bundle --outfile=dist/cli.js --format=cjs --platform=node --banner:js=\"#!/usr/bin/env node\"",
+    "compile:action": "esbuild ./action/index.ts --bundle --outfile=dist/action.js --format=cjs --platform=node",
+    "compile": "npm run compile:ext && npm run compile:cli && npm run compile:action",
     "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch",
     "package": "vsce package --no-dependencies"
   },

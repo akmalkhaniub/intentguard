@@ -1,8 +1,24 @@
 # Change Log
 
-All notable changes to the "agentlens" extension will be documented in this file.
+All notable changes to the "intentguard" extension will be documented in this file.
 
-## [0.7.0] - The Universal AgentLens Rebrand Edition
+## [0.8.0] - The IntentGuard Autonomous Control Plane & Rollback Suite
+
+- **🛡️ IntentGuard Brand & Autonomous Control Plane**:
+  - Rebranded extension to **`intentguard`** (`akmalkhaniub.intentguard`), addressing **"The Missing Middle"** problem where developers and teams are blind during autonomous code crunching.
+  - Formulated the Universal Intent & Trace Specification (**UTIS v1.0**).
+  - Implemented the 4 In-Flight Control Interventions:
+    1. *Semantic Scope Boundary*: Enforces execution within `implementation_plan.md` file bounds and detects unannounced requirement spill.
+    2. *Blast-Radius Circuit Breaker*: Trips upon detecting high churn hotspots (≥3 edits) or destructive file shrinkage (>25%).
+    3. *Context Poisoning Gateway*: Flags when raw terminal dumps consume >25% of the LLM's active prompt window.
+    4. *Credential & Secret Shield*: Blocks accidental staging of API tokens and secrets.
+- **👥 Decoupled Hexagonal Architecture (3 Personas)**:
+  - **Persona A (Visual IDE Builder)**: Interactive VS Code/Cursor cockpit with Live IntentGuard Status Banner, adherence meter, scope spill warning pills, and 1-click **"⏪ Revert Scope Spill"** button.
+  - **Persona B (Terminal Purist)**: Standalone headless CLI (`intentguard` / `ig`) supporting `list`, `inspect <id>`, `audit <id>`, `rollback <id> [--spill-only] [--exec]`, and `compare <id1> <id2>`.
+  - **Persona C (DevOps Gatekeeper)**: GitHub Action (`action/action.yml` and `action/index.ts`) for PR gatekeeping with automated Markdown governance scorecards and CI failure on circuit breaks.
+- **🔄 Zero Breakage & 100% Backwards Compatibility**:
+  - Primary command identifiers `intentguard.openVisualizer` and `intentguard.refreshSessions` registered alongside backwards-compatible aliases for `agentlens.*` and `antigravity.*`.
+  - Maintained 100% offline, air-gapped support with local vendor assets.
 
 - **🌌 Complete Universal Rebrand**:
   - Rebranded extension package from `antigravity-visualizer` to **`agentlens`** to accurately reflect first-class, equal support for **Anthropic Claude**, **Google Antigravity**, and **OpenAI Codex**.
