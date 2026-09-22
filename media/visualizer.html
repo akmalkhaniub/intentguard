@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity Intelligence Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: var(--vscode-editor-background, #1e1e1e);
+      --bg-panel: var(--vscode-sideBar-background, #252526);
+      --border: var(--vscode-panel-border, #3c3c3c);
+      --text: var(--vscode-editor-foreground, #d4d4d4);
+      --text-muted: var(--vscode-descriptionForeground, #858585);
+      --accent: var(--vscode-textLink-foreground, #38bdf8);
+      --card-bg: var(--vscode-editorWidget-background, #2d2d2d);
+      --green: #4ade80;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .header {
+      padding: 12px 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .title { font-size: 16px; font-weight: 700; color: var(--accent); }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      background: rgba(74, 222, 128, 0.15);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+
+    /* Time-Travel VCR Player Bar */
+    .player-bar {
+      background: var(--vscode-editorWidget-background, #1e1e1e);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+    }
+    .player-controls { display: flex; gap: 6px; }
+    .player-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .player-btn:hover { background: var(--border); }
+    .player-btn.active { background: var(--accent); color: var(--vscode-editor-background, #000); border-color: var(--accent); }
+    .player-slider {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .player-status {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .scrub-delta-pill {
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      display: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .scrub-delta-pill.visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Category Filter Bar */
+    .category-bar {
+      display: flex;
+      background: var(--bg-panel);
+      padding: 8px 16px 4px 16px;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .cat-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .cat-pill:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .cat-pill.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 9px 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+    }
+
+    /* Accessibility focus rings & High-Contrast mode */
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--vscode-focusBorder, #007acc) !important;
+      outline-offset: 1px;
+    }
+    @media (forced-colors: active) {
+      .card, .chart-box, .player-bar, .tab-btn.active, .modal-content, .step-card {
+        border: 1px solid var(--vscode-contrastBorder, ButtonText) !important;
+      }
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      padding: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .card-val { font-size: 20px; font-weight: 700; color: var(--accent); }
+    .card-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+    .chart-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .box-title { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 14px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { background: rgba(0,0,0,0.25); color: var(--text-muted); }
+    .file-link { color: var(--accent); cursor: pointer; text-decoration: underline; font-family: monospace; }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .badge-edit { background: rgba(251, 191, 36, 0.2); color: #fde68a; }
+    .badge-new { background: rgba(74, 222, 128, 0.2); color: #86efac; }
+    .badge-read { background: rgba(56, 189, 248, 0.2); color: #bae6fd; }
+    .badge-cmd { background: rgba(244, 63, 94, 0.2); color: #fda4af; }
+    .badge-sub { background: rgba(192, 132, 252, 0.2); color: #e9d5ff; }
+    .badge-churn-high { background: rgba(239, 68, 68, 0.25); color: #fca5a5; font-weight: bold; }
+    .badge-churn-med { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .btn-action {
+      background: var(--vscode-button-background, #0e639c);
+      color: var(--vscode-button-foreground, #fff);
+      border: none;
+      padding: 3px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+    .step-card.scrub-active {
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    }
+    .step-header {
+      padding: 8px 14px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .step-body { padding: 14px; }
+    .thinking-box {
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .thinking-box summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+    .tool-box {
+      background: rgba(0,0,0,0.4);
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 8px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    .alert-box {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .alert-success { background: rgba(74, 222, 128, 0.15); border: 1px solid rgba(74, 222, 128, 0.3); color: #86efac; }
+    .alert-warning { background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); color: #fde68a; }
+    .alert-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
+
+    /* Diff Inspector Styles */
+    .diff-container {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #0d1117;
+      overflow: hidden;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 11px;
+    }
+    .diff-header {
+      background: #161b22;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .diff-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .diff-btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .diff-btn:hover {
+      background: #30363d;
+      color: #fff;
+    }
+    .diff-content {
+      padding: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+    .diff-line {
+      display: block;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+    .diff-line.del {
+      background: rgba(248, 81, 73, 0.15);
+      color: #ff7b72;
+    }
+    .diff-line.add {
+      background: rgba(46, 160, 67, 0.15);
+      color: #7ee787;
+    }
+    .diff-line.hdr {
+      color: #79c0ff;
+      font-weight: bold;
+    }
+    .diff-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 8px;
+    }
+    .diff-pane {
+      background: #090d13;
+      padding: 6px;
+      overflow-x: auto;
+      border-radius: 3px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    /* Filter Toolbar Styles */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .filter-chip.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+    .filter-input {
+      flex: 1;
+      min-width: 180px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+    .filter-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* VCR Keyboard Shortcuts Hint */
+    .shortcuts-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+    }
+    .shortcuts-hint kbd {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: monospace;
+      color: var(--accent);
+      font-size: 10px;
+    }
+
+    /* Session Comparator Styles */
+    .compare-header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .compare-select {
+      flex: 1;
+      min-width: 260px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+    .compare-select:focus {
+      border-color: var(--accent);
+    }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .compare-col {
+      background: var(--card-bg);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+    .compare-col-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 12px;
+    }
+    .compare-metric-lbl {
+      color: var(--text-muted);
+    }
+    .compare-metric-val {
+      font-weight: bold;
+    }
+    .delta-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 6px;
+    }
+    .delta-win {
+      background: rgba(74, 222, 128, 0.2);
+      color: #86efac;
+    }
+    .delta-lose {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+    .delta-neutral {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+
+    /* Context Engineering Breakdown Bar */
+    .context-bar-container {
+      height: 22px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      overflow: hidden;
+      margin: 12px 0;
+      border: 1px solid var(--border);
+    }
+    .context-segment {
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .ctx-sys { background: #38bdf8; }
+    .ctx-src { background: #4ade80; }
+    .ctx-think { background: #c084fc; }
+    .ctx-tool { background: #fbbf24; }
+    .ctx-noise { background: #fb7185; }
+
+    .context-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 11px;
+      margin-bottom: 14px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    /* Agent Brand Badges */
+    .brand-badge-claude {
+      background: rgba(192, 132, 252, 0.2) !important;
+      color: #c084fc !important;
+      border: 1px solid rgba(192, 132, 252, 0.4) !important;
+    }
+    .brand-badge-antigravity {
+      background: rgba(56, 189, 248, 0.2) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    }
+    .brand-badge-codex {
+      background: rgba(74, 222, 128, 0.2) !important;
+      color: #4ade80 !important;
+      border: 1px solid rgba(74, 222, 128, 0.4) !important;
+    }
+
+    /* Modal for Agent Fork */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 90%;
+      max-width: 580px;
+      padding: 22px;
+    }
+    .fork-target-card.selected {
+      border: 2px solid var(--accent) !important;
+      background: rgba(56, 189, 248, 0.1) !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="title" id="sessionTitle">Agent Diagnostic Suite</div>
+        <span class="badge brand-badge-antigravity" id="agentBrandBadge">ANTIGRAVITY</span>
+        <span class="badge badge-cmd" id="agentModelBadge">Gemini 2.0 Flash</span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted);" id="sessionId">Select a session to begin deep audit</div>
+    </div>
+    <div class="header-actions">
+      <button class="player-btn" onclick="openForkModal()" title="1-Click Agent Fork & Hand-Off to Claude or Antigravity">🔄 Hand-Off / Fork</button>
+      <button class="player-btn" onclick="exportStandaloneHtml()" title="Export self-contained HTML report for GitHub PRs">📤 Export PR Report (.html)</button>
+      <div class="live-badge">
+        <div class="pulse-dot"></div>
+        LIVE WATCHER ACTIVE
+      </div>
+    </div>
+  </div>
+
+  <!-- Time-Travel VCR Scrubber Bar -->
+  <div class="player-bar">
+    <div class="player-controls">
+      <button class="player-btn" onclick="scrubStep(0)" title="Jump to start">⏮</button>
+      <button class="player-btn" onclick="stepBackward()" title="Step back">◀</button>
+      <button class="player-btn" id="playBtn" onclick="togglePlay()" title="Play / Pause replay">▶ Play</button>
+      <button class="player-btn" onclick="stepForward()" title="Step forward">▶</button>
+      <button class="player-btn" onclick="scrubToEnd()" title="Jump to end">⏭</button>
+    </div>
+    <span style="font-weight: bold; color: var(--accent);" id="scrubCounter">Step 0 / 0</span>
+    <input type="range" class="player-slider" id="timeTravelSlider" min="0" max="0" value="0" oninput="onSliderInput(event)">
+    <div class="player-status" id="scrubStatus">Agent timeline ready.</div>
+    <div class="scrub-delta-pill" id="scrubDeltaPill" onclick="jumpToActiveDelta()" title="Click to inspect Code Delta in Transcript">
+      ⚡ <span id="scrubDeltaText">Delta</span>
+    </div>
+    <div class="player-controls">
+      <button class="player-btn active" id="speed1x" onclick="setSpeed(1)">1x</button>
+      <button class="player-btn" id="speed2x" onclick="setSpeed(2)">2x</button>
+      <button class="player-btn" id="speed4x" onclick="setSpeed(4)">4x</button>
+    </div>
+    <div class="shortcuts-hint" title="Keyboard controls active when window is focused">
+      ⌨️ <kbd>Space</kbd> Play &bull; <kbd>←</kbd><kbd>→</kbd> Step &bull; <kbd>1</kbd><kbd>2</kbd><kbd>4</kbd> Speed
+    </div>
+  </div>
+
+  <!-- Tab Categorization Filter Bar -->
+  <div class="category-bar">
+    <button class="cat-pill active" onclick="filterTabCategory('all', this)">All Views (13)</button>
+    <button class="cat-pill" onclick="filterTabCategory('flow', this)">⚡ Execution & Flow</button>
+    <button class="cat-pill" onclick="filterTabCategory('code', this)">⏪ Code & Rollbacks</button>
+    <button class="cat-pill" onclick="filterTabCategory('diag', this)">🤖 Diagnostics & Safety</button>
+    <button class="cat-pill" onclick="filterTabCategory('bench', this)">⚖️ Benchmarks & Models</button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-cat="flow" role="tab" onclick="switchTab('tab-phases')">🗺️ Cognitive Phases</button>
+    <button class="tab-btn" data-cat="flow" role="tab" onclick="switchTab('tab-handoffs')">🔀 Agent Handoffs</button>
+    <button class="tab-btn" data-cat="flow" role="tab" onclick="switchTab('tab-time')">⏱️ Time & Bottlenecks</button>
+    <button class="tab-btn" data-cat="flow" role="tab" onclick="switchTab('tab-transcript')">💬 Step Transcript</button>
+
+    <button class="tab-btn" data-cat="code" role="tab" onclick="switchTab('tab-rollback')">⏪ Git Rollback Assistant</button>
+    <button class="tab-btn" data-cat="code" role="tab" onclick="switchTab('tab-churn')">🔥 File Churn Matrix</button>
+    <button class="tab-btn" data-cat="code" role="tab" onclick="switchTab('tab-artifacts')">📑 Plan & Logs</button>
+
+    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-diag')">🤖 AI Diagnostic Report</button>
+    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-risk')">🛡️ Risk & Sanity Scan</button>
+    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-plan')">🎯 Plan vs. Reality</button>
+    <button class="tab-btn" data-cat="diag" role="tab" onclick="switchTab('tab-cost')">💰 Tokens & Context</button>
+
+    <button class="tab-btn" data-cat="bench" role="tab" onclick="switchTab('tab-compare')">⚖️ Session Comparator</button>
+    <button class="tab-btn" data-cat="bench" role="tab" onclick="switchTab('tab-leaderboard')">🏆 Repo Leaderboard</button>
+  </div>
+
+  <div class="content">
+    <!-- Tab 1: Cognitive Phases -->
+    <div id="tab-phases" class="tab-pane active">
+      <div class="chart-box">
+        <div class="box-title">Execution Lifecycle (Scalable Grouped Architecture)</div>
+        <div id="phaseMermaid" class="mermaid">flowchart LR\n  empty[Loading phases...]</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">Chronological Operations Timeline</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px;">Step</th>
+              <th style="width: 70px;">Action</th>
+              <th>Target / Path</th>
+              <th>Details</th>
+              <th style="width: 60px;">Time</th>
+              <th style="width: 70px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTableBody">
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No operations recorded.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Agent Handoffs -->
+    <div id="tab-handoffs" class="tab-pane">
+      <div class="chart-box">
+        <div class="box-title">Multi-Agent Task Switching Sequence</div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Visualizes how control passes between user, lead agent, and delegated subagent swarms.</p>
+        <div id="sequenceMermaid" class="mermaid">sequenceDiagram\n  actor User\n  participant Lead as Antigravity\n  User->>Lead: Loading handoffs...</div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Git Rollback Assistant -->
+    <div id="tab-rollback" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="rollbackFilesCount">0</div><div class="card-lbl">Modified Files</div></div>
+        <div class="card"><div class="card-val" style="color: #38bdf8;">git restore</div><div class="card-lbl">Restoration Command</div></div>
+        <div class="card"><div class="card-val" style="color: #4ade80;">ISOLATED</div><div class="card-lbl">Working Tree Safety</div></div>
+        <div class="card"><div class="card-val" style="color: #fbbf24;">READY</div><div class="card-lbl">Rollback Engine</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">⏪ 1-Click Full Session Rollback</div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Execute this command in your repository to revert all files touched during this agent session back to git HEAD:
+        </p>
+        <div style="background: var(--vscode-editor-background, #0d1117); padding: 12px; border-radius: 4px; border: 1px solid var(--border); font-family: monospace; font-size: 12px; margin-bottom: 12px; overflow-x: auto; color: var(--green, #7ee787);" id="fullRollbackCmdBox">
+          git restore &lt;files&gt;
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="player-btn" onclick="copyFullRollbackCmd(this)">📋 Copy Rollback Command</button>
+          <button class="player-btn" onclick="runRollbackInTerminal()">💻 Run in VS Code Terminal</button>
+          <button class="player-btn" onclick="exportFullPatch()">📥 Export Reverse Patch (.patch)</button>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">Selective File Rollback Table</div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+          Select specific files below to generate an isolated rollback command, or revert individual files with 1-click:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" id="selectAllRollback" onchange="toggleSelectAllRollback(this)" checked></th>
+              <th>File Path</th>
+              <th style="width: 80px;">Edits</th>
+              <th style="width: 90px;">Action Type</th>
+              <th style="width: 220px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rollbackTableBody">
+            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No modified files found in this session.</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <span style="font-size: 12px; color: var(--text-muted);" id="selectedFilesCountText">0 files selected</span>
+          <button class="player-btn" onclick="copySelectedRollbackCmd(this)">📋 Copy Command for Selected Files</button>
+        </div>
+    </div>
+
+    <!-- Tab 3.5: Session Comparator -->
+    <div id="tab-compare" class="tab-pane">
+      <div class="compare-header">
+        <strong style="color: var(--accent); white-space: nowrap;">⚖️ Benchmark Target:</strong>
+        <select id="compareSessionSelect" class="compare-select" onchange="onSelectCompareSession(this.value)">
+          <option value="">-- Choose another session to benchmark against --</option>
+        </select>
+        <button class="player-btn" onclick="refreshComparison()">🔄 Refresh</button>
+      </div>
+
+      <div id="compareEmptyPrompt" style="text-align: center; padding: 40px; color: var(--text-muted); background: var(--card-bg); border-radius: 6px; border: 1px solid var(--border);">
+        <div style="font-size: 32px; margin-bottom: 10px;">⚖️</div>
+        <h3 style="color: var(--text);">Select a session from the dropdown above</h3>
+        <p style="font-size: 12px; margin-top: 6px;">Compare token costs, execution duration, health scores, and file touchpoints side-by-side.</p>
+      </div>
+
+      <div id="compareResults" style="display: none;">
+        <!-- Comparative Verdict Banner -->
+        <div id="compareVerdictBanner" class="alert-box alert-success" style="margin-bottom: 16px;">
+          Benchmarking sessions...
+        </div>
+
+        <!-- Side-by-Side KPI Columns -->
+        <div class="compare-grid">
+          <!-- Active Session (A) -->
+          <div class="compare-col">
+            <div class="compare-col-title">
+              <span id="compNameA">Session A (Active)</span>
+              <span class="badge badge-new" id="compBadgeA">BASELINE</span>
+            </div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Health Score</span><span class="compare-metric-val" id="compHealthA">100 / 100</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Plan Adherence</span><span class="compare-metric-val" id="compPlanA">100%</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Estimated Cost</span><span class="compare-metric-val" id="compCostA">$0.0000</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Total Time</span><span class="compare-metric-val" id="compTimeA">0s</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Total Steps</span><span class="compare-metric-val" id="compStepsA">0</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Total Tokens</span><span class="compare-metric-val" id="compTokensA">0</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Files Modified</span><span class="compare-metric-val" id="compFilesA">0</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Errors & Retries</span><span class="compare-metric-val" id="compErrorsA">0</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Security Rating</span><span class="compare-metric-val" id="compRiskA">PASSED</span></div>
+          </div>
+
+          <!-- Comparison Target Session (B) -->
+          <div class="compare-col">
+            <div class="compare-col-title">
+              <span id="compNameB">Session B (Target)</span>
+              <span class="badge badge-edit" id="compBadgeB">COMPARISON</span>
+            </div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Health Score</span><span class="compare-metric-val" id="compHealthB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Plan Adherence</span><span class="compare-metric-val" id="compPlanB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Estimated Cost</span><span class="compare-metric-val" id="compCostB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Total Time</span><span class="compare-metric-val" id="compTimeB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Total Steps</span><span class="compare-metric-val" id="compStepsB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Total Tokens</span><span class="compare-metric-val" id="compTokensB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Files Modified</span><span class="compare-metric-val" id="compFilesB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Errors & Retries</span><span class="compare-metric-val" id="compErrorsB">--</span></div>
+            <div class="compare-metric-row"><span class="compare-metric-lbl">Security Rating</span><span class="compare-metric-val" id="compRiskB">--</span></div>
+          </div>
+        </div>
+
+        <!-- File Footprint Overlap & Divergence -->
+        <div class="chart-box">
+          <div class="box-title">File Footprint Comparison (Common vs Divergent)</div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Identifies shared file touchpoints and isolated files edited between both sessions.</p>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 140px;">Scope Status</th>
+                <th>File Path</th>
+                <th style="width: 140px;">Active Session (A)</th>
+                <th style="width: 140px;">Target Session (B)</th>
+              </tr>
+            </thead>
+            <tbody id="compFileTableBody">
+              <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No comparison data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3.7: Repo Agent Leaderboard -->
+    <div id="tab-leaderboard" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="lbFastestAgent" style="color: #38bdf8;">--</div><div class="card-lbl">⚡ Fastest Agent</div></div>
+        <div class="card"><div class="card-val" id="lbCheapestAgent" style="color: #4ade80;">--</div><div class="card-lbl">💵 Most Cost-Effective</div></div>
+        <div class="card"><div class="card-val" id="lbReliableAgent" style="color: #c084fc;">--</div><div class="card-lbl">🛡️ Most Reliable</div></div>
+        <div class="card"><div class="card-val" id="lbTotalSessions">0</div><div class="card-lbl">Total Sessions Audited</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">🏆 Repository Multi-Agent Leaderboard</div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px;">
+          Real-world benchmark statistics comparing AI coding agents that worked on your repository.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Agent & Model</th>
+              <th style="width: 90px;">Sessions</th>
+              <th style="width: 110px;">Avg Cost / Task</th>
+              <th style="width: 90px;">Avg Speed</th>
+              <th style="width: 110px;">First-Pass Win %</th>
+              <th style="width: 110px;">Plan Adherence</th>
+              <th style="width: 90px;">Total Errors</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading repository agent statistics...</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 14px;">
+          <button class="player-btn" onclick="fetchLeaderboard()">🔄 Refresh Leaderboard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: AI Diagnostic Report -->
+    <div id="tab-diag" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="diagScore">100 / 100</div><div class="card-lbl">Session Health Score</div></div>
+        <div class="card"><div class="card-val" id="diagVerdict">HEALTHY</div><div class="card-lbl">Diagnostic Verdict</div></div>
+        <div class="card"><div class="card-val" id="diagIncidentsCount">0</div><div class="card-lbl">Incidents / Retries</div></div>
+        <div class="card"><div class="card-val" id="diagStatus">SUCCESS</div><div class="card-lbl">Task Completion</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">Executive Diagnostic Summary</div>
+        <div id="diagExecutiveSummary" class="alert-box alert-success">Evaluating session...</div>
+        <div style="font-size: 13px; margin-top: 10px;"><strong>💡 Recommendation: </strong><span id="diagRecommendation" style="color: var(--text-muted);">...</span></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">Incident Log (Errors, Retries & Halts)</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;">Step</th>
+              <th style="width: 110px;">Incident Type</th>
+              <th>Incident Description</th>
+              <th>Resolution / Recovery</th>
+            </tr>
+          </thead>
+          <tbody id="incidentsBody">
+            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No incidents detected. Session executed cleanly.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 5: Risk & Sanity Scan -->
+    <div id="tab-risk" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="riskGrade">PASSED</div><div class="card-lbl">Security Risk Rating</div></div>
+        <div class="card"><div class="card-val" id="riskLeaks">0</div><div class="card-lbl">Secret / Key Leaks</div></div>
+        <div class="card"><div class="card-val" id="riskTruncates">0</div><div class="card-lbl">Destructive Edits</div></div>
+        <div class="card"><div class="card-val" id="riskDoomLoops">0</div><div class="card-lbl">Command Doom Loops</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">🛡️ Security & Integrity Scan Results</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;">Step</th>
+              <th style="width: 90px;">Severity</th>
+              <th style="width: 140px;">Category</th>
+              <th>Finding Description</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody id="riskTableBody">
+            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No security or sanity risks detected.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 6: Tokens & Cost ($) -->
+    <div id="tab-cost" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="costTotal">$0.0000</div><div class="card-lbl">Estimated Session Cost</div></div>
+        <div class="card"><div class="card-val" id="tokensTotal">0</div><div class="card-lbl">Total Tokens (In + Out)</div></div>
+        <div class="card"><div class="card-val" id="tokensInput">0</div><div class="card-lbl">Input Context Tokens</div></div>
+        <div class="card"><div class="card-val" id="tokensOutput">0</div><div class="card-lbl">Output / Thinking Tokens</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">Token Accounting & Pricing Model</div>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6;" id="costBreakdown">
+          Calculated using standard Gemini Flash pricing tiers ($0.15/1M input tokens, $0.60/1M output tokens).
+        </p>
+        <div style="margin-top: 14px; font-size: 13px;">
+          <strong>Peak Context Window Size: </strong><span id="maxContextTokens" style="color: var(--accent); font-weight: bold;">0</span> tokens
+        </div>
+      </div>
+
+      <!-- Context Engineering & Window Architecture -->
+      <div class="chart-box">
+        <div class="box-title">🧠 Context Window Architecture & Budget Composition</div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">
+          Visualizes how prompt context is budgeted across system instructions, source files, chain-of-thought, tool outputs, and terminal noise.
+        </p>
+
+        <div class="context-bar-container">
+          <div class="context-segment ctx-sys" id="ctxSysBar" title="System Prompt" style="width: 20%;"></div>
+          <div class="context-segment ctx-src" id="ctxSrcBar" title="Source Files" style="width: 45%;"></div>
+          <div class="context-segment ctx-think" id="ctxThinkBar" title="Thinking" style="width: 15%;"></div>
+          <div class="context-segment ctx-tool" id="ctxToolBar" title="Tool Invocations" style="width: 10%;"></div>
+          <div class="context-segment ctx-noise" id="ctxNoiseBar" title="Terminal Noise" style="width: 10%;"></div>
+        </div>
+
+        <div class="context-legend">
+          <div class="legend-item"><span class="legend-dot ctx-sys"></span> System Prompt: <strong id="ctxSysText" style="margin-left: 4px;">0 tok</strong></div>
+          <div class="legend-item"><span class="legend-dot ctx-src"></span> Injected Files: <strong id="ctxSrcText" style="margin-left: 4px;">0 tok</strong></div>
+          <div class="legend-item"><span class="legend-dot ctx-think"></span> Thinking: <strong id="ctxThinkText" style="margin-left: 4px;">0 tok</strong></div>
+          <div class="legend-item"><span class="legend-dot ctx-tool"></span> Tool Invocations: <strong id="ctxToolText" style="margin-left: 4px;">0 tok</strong></div>
+          <div class="legend-item"><span class="legend-dot ctx-noise"></span> Terminal Noise: <strong id="ctxNoiseText" style="margin-left: 4px;">0 tok</strong></div>
+        </div>
+
+        <div id="ctxPoisonAlert" class="alert-box alert-warning" style="display: none; margin-top: 10px;">
+          ⚠️ <strong>Context Poisoning Warning:</strong> <span id="ctxPoisonReason">Terminal logs consumed over 25% of the context window.</span>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap;">
+          <div>⚡ <strong>Prompt Cache Hits: </strong><span id="ctxCacheHits" style="color: #4ade80; font-weight: bold;">0</span> tokens</div>
+          <div>💵 <strong>Estimated Cache Savings: </strong><span id="ctxCacheSavings" style="color: #38bdf8; font-weight: bold;">$0.0000</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 7: Time & Bottlenecks -->
+    <div id="tab-time" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="timeTotal">0s</div><div class="card-lbl">Total Session Time</div></div>
+        <div class="card"><div class="card-val" id="timeReasoning">0s</div><div class="card-lbl">Model Thinking Time</div></div>
+        <div class="card"><div class="card-val" id="timeCommands">0s</div><div class="card-lbl">Terminal / Build Time</div></div>
+        <div class="card"><div class="card-val" id="timeEdits">0s</div><div class="card-lbl">File Writing Time</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">🚨 Top Bottlenecks (Slowest Steps) & Why They Took Long</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;">Step</th>
+              <th style="width: 70px;">Duration</th>
+              <th style="width: 100px;">Activity</th>
+              <th>Operation Summary</th>
+              <th>Diagnostic Cause</th>
+            </tr>
+          </thead>
+          <tbody id="bottlenecksBody">
+            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No significant latency bottlenecks detected.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 8: Plan vs. Reality -->
+    <div id="tab-plan" class="tab-pane">
+      <div class="grid-4">
+        <div class="card"><div class="card-val" id="planAdherence">0%</div><div class="card-lbl">Plan Adherence</div></div>
+        <div class="card"><div class="card-val" id="planPlannedCount">0</div><div class="card-lbl">Planned Files</div></div>
+        <div class="card"><div class="card-val" id="planExecutedCount">0</div><div class="card-lbl">Actual Files Modified</div></div>
+        <div class="card"><div class="card-val" id="planUnplannedCount">0</div><div class="card-lbl">Scope Creep / Unplanned</div></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="box-title">Plan vs. Execution Audit Table</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>File Name</th>
+              <th>Audit Assessment</th>
+            </tr>
+          </thead>
+          <tbody id="planAuditBody">
+            <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No implementation plan found for this session.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 9: File Churn Matrix -->
+    <div id="tab-churn" class="tab-pane">
+      <div class="chart-box">
+        <div class="box-title">File Modification Intensity (Identify Risky Hotspots)</div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Files modified repeatedly (High Churn) represent areas where the agent debugged or struggled.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Risk / Churn</th>
+              <th>File</th>
+              <th>Edits</th>
+              <th>Creates</th>
+              <th>Reads</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="churnTableBody">
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No files modified.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 10: Step Transcript & Filters -->
+    <div id="tab-transcript" class="tab-pane">
+      <div class="filter-bar">
+        <button class="filter-chip active" id="filterAll" onclick="setStepFilter('all')">All Steps (<span id="countAll">0</span>)</button>
+        <button class="filter-chip" id="filterEdits" onclick="setStepFilter('edits')">✏️ File Edits (<span id="countEdits">0</span>)</button>
+        <button class="filter-chip" id="filterCmds" onclick="setStepFilter('cmds')">🖥️ Terminal (<span id="countCmds">0</span>)</button>
+        <button class="filter-chip" id="filterWarns" onclick="setStepFilter('warns')">⚠️ Warnings/Errors (<span id="countWarns">0</span>)</button>
+        <button class="filter-chip" id="filterThink" onclick="setStepFilter('think')">💭 Thinking (<span id="countThink">0</span>)</button>
+        <input type="text" class="filter-input" id="stepSearchInput" placeholder="🔍 Filter steps by keyword, file, or command..." oninput="onSearchSteps(event)">
+      </div>
+      <div id="stepsContainer"><p style="color: var(--text-muted);">Select a session.</p></div>
+    </div>
+
+    <!-- Tab 11: Artifacts & Decoupled Task Logs -->
+    <div id="tab-artifacts" class="tab-pane">
+      <div id="taskLogsContainer"></div>
+      <div id="scratchFilesContainer"></div>
+      <div id="artifactsContainer"><p style="color: var(--text-muted);">No artifacts found.</p></div>
+    </div>
+  </div>
+
+  <script>
+    const vscode = acquireVsCodeApi();
+    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+    let currentData = null;
+    let availableSessions = [];
+    let comparisonData = null;
+    let currentScrubIndex = 0;
+    let isPlaying = false;
+    let playTimer = null;
+    let playSpeed = 1;
+    let activeStepFilter = 'all';
+    let stepSearchQuery = '';
+
+    window.addEventListener('message', event => {
+      const message = event.data;
+      if (message.command === 'setSessionData') {
+        currentData = message.data;
+        if (message.availableSessions) {
+          availableSessions = message.availableSessions;
+          populateComparisonDropdown();
+        }
+        renderAll();
+      } else if (message.command === 'setComparisonData') {
+        comparisonData = message.data;
+        renderComparison();
+      } else if (message.command === 'setLeaderboardData' || message.type === 'setLeaderboardData') {
+        renderLeaderboard(message.data || message.leaderboard);
+      }
+    });
+
+    /* Global Keyboard Shortcuts for VCR Controls */
+    window.addEventListener('keydown', event => {
+      const activeEl = document.activeElement;
+      const tag = activeEl ? activeEl.tagName : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || activeEl?.isContentEditable) {
+        return; // Avoid intercepting while user is typing in filter or input boxes
+      }
+
+      if (event.key === 'Escape') {
+        closeForkModal();
+        return;
+      }
+
+      if (event.code === 'Space') {
+        event.preventDefault();
+        togglePlay();
+      } else if (event.key === 'ArrowRight' || event.key === 'Right') {
+        event.preventDefault();
+        stepForward();
+      } else if (event.key === 'ArrowLeft' || event.key === 'Left') {
+        event.preventDefault();
+        stepBackward();
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        scrubStep(0);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        scrubToEnd();
+      } else if (event.key === '1') {
+        setSpeed(1);
+      } else if (event.key === '2') {
+        setSpeed(2);
+      } else if (event.key === '4') {
+        setSpeed(4);
+      }
+    });
+
+    function renderAll() {
+      if (!currentData) return;
+
+      document.getElementById('sessionTitle').innerText = currentData.title || currentData.conversationId.substring(0, 8);
+      document.getElementById('sessionId').innerText = currentData.conversationId;
+
+      const b = currentData.brand || 'antigravity';
+      const badgeEl = document.getElementById('agentBrandBadge');
+      if (badgeEl) {
+        badgeEl.innerText = (currentData.brand || 'antigravity').toUpperCase();
+        badgeEl.className = 'badge ' + (b === 'claude' ? 'brand-badge-claude' : (b === 'codex' ? 'brand-badge-codex' : 'brand-badge-antigravity'));
+      }
+      const modelEl = document.getElementById('agentModelBadge');
+      if (modelEl) {
+        modelEl.innerText = currentData.modelName || 'Gemini 2.0 Flash';
+      }
+
+      // Scrubber setup
+      const maxSteps = (currentData.steps || []).length;
+      const slider = document.getElementById('timeTravelSlider');
+      slider.max = Math.max(0, maxSteps - 1);
+      slider.value = currentScrubIndex;
+      updateScrubUI();
+
+      // 1. Cognitive Phases
+      const phaseEl = document.getElementById('phaseMermaid');
+      phaseEl.removeAttribute('data-processed');
+      phaseEl.innerHTML = currentData.mermaidPhaseChart || 'flowchart LR\\n  empty([No phases])';
+      mermaid.run({ nodes: [phaseEl] });
+
+      // Events Table
+      const eventsBody = document.getElementById('eventsTableBody');
+      const events = currentData.fileEvents || [];
+      if (!events.length) {
+        eventsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No operations recorded.</td></tr>';
+      } else {
+        eventsBody.innerHTML = events.map(e => {
+          let badgeClass = 'badge-read';
+          if (e.action === 'EDIT') badgeClass = 'badge-edit';
+          else if (e.action === 'NEW' || e.action === 'WRITE') badgeClass = 'badge-new';
+          else if (e.action === 'COMMAND') badgeClass = 'badge-cmd';
+          else if (e.action === 'SUBAGENT') badgeClass = 'badge-sub';
+
+          const isFile = e.action !== 'COMMAND' && e.action !== 'SUBAGENT';
+          const fileDisplay = isFile
+            ? `<span class="file-link" onclick="openFile('${escapeJs(e.path)}')">${escapeHtml(e.path)}</span>`
+            : `<code>${escapeHtml(e.path)}</code>`;
+
+          const btn = isFile ? `<button class="btn-action" onclick="openFile('${escapeJs(e.path)}')">Open</button>` : '';
+
+          return `
+            <tr>
+              <td><strong>#${e.stepIndex}</strong></td>
+              <td><span class="badge ${badgeClass}">${e.action}</span></td>
+              <td>${fileDisplay}</td>
+              <td style="color: var(--text-muted);">${escapeHtml(e.details || '')}</td>
+              <td>${e.durationSec || 0}s</td>
+              <td>${btn}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 2. Agent Handoffs Sequence
+      const seqEl = document.getElementById('sequenceMermaid');
+      seqEl.removeAttribute('data-processed');
+      seqEl.innerHTML = currentData.mermaidSequenceChart || 'sequenceDiagram\\n  User->>Lead: No handoffs';
+      mermaid.run({ nodes: [seqEl] });
+
+      // 3. Rollback Assistant
+      const rp = currentData.rollbackPlan || { modifiedFiles: [], fullRollbackCommand: '', filesCount: 0 };
+      document.getElementById('rollbackFilesCount').innerText = rp.filesCount || 0;
+      document.getElementById('fullRollbackCmdBox').innerText = rp.fullRollbackCommand || '# No files modified in this session';
+
+      const rbBody = document.getElementById('rollbackTableBody');
+      const modFiles = rp.modifiedFiles || [];
+      if (!modFiles.length) {
+        rbBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No modified files found in this session.</td></tr>';
+      } else {
+        rbBody.innerHTML = modFiles.map(f => {
+          const stat = (currentData.fileStats || []).find(s => s.path === f);
+          const edits = stat ? (stat.edits + stat.creates) : 1;
+          const actionTag = (stat && stat.creates > 0) ? 'CREATED' : 'MODIFIED';
+          return `
+            <tr>
+              <td><input type="checkbox" class="file-rb-checkbox" data-path="${escapeHtml(f)}" onchange="updateSelectedRollbackCount()" checked></td>
+              <td><code>${escapeHtml(f)}</code></td>
+              <td><strong>${edits}</strong></td>
+              <td><span class="badge ${actionTag === 'CREATED' ? 'badge-new' : 'badge-edit'}">${actionTag}</span></td>
+              <td style="display: flex; gap: 6px;">
+                <button class="diff-btn" onclick="runSingleRollback('${escapeJs(f)}')">⏪ Revert</button>
+                <button class="diff-btn" onclick="openFile('${escapeJs(f)}')">View</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+      updateSelectedRollbackCount();
+
+      // 4. AI Diagnostic Report
+      const dr = currentData.diagnosticReport || {};
+      document.getElementById('diagScore').innerText = `${dr.healthScore || 100} / 100`;
+      document.getElementById('diagVerdict').innerText = dr.verdict || 'HEALTHY';
+      document.getElementById('diagIncidentsCount').innerText = (dr.incidents || []).length;
+      document.getElementById('diagStatus').innerText = (dr.verdict === 'FAILED_OR_INCOMPLETE') ? 'ACTION REQUIRED' : 'COMPLETED';
+
+      const execEl = document.getElementById('diagExecutiveSummary');
+      execEl.innerText = dr.executiveSummary || 'Session ran smoothly.';
+      execEl.className = dr.verdict === 'HEALTHY' ? 'alert-box alert-success' : 'alert-box alert-warning';
+      document.getElementById('diagRecommendation').innerText = dr.recommendation || 'No immediate action required.';
+
+      const incBody = document.getElementById('incidentsBody');
+      const incList = dr.incidents || [];
+      if (!incList.length) {
+        incBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No incidents detected. Session executed cleanly.</td></tr>';
+      } else {
+        incBody.innerHTML = incList.map(inc => `
+          <tr>
+            <td><strong>#${inc.stepIndex}</strong></td>
+            <td><span class="badge badge-cmd">${inc.type}</span></td>
+            <td>${escapeHtml(inc.description)}</td>
+            <td style="color: var(--text-muted);">${escapeHtml(inc.resolution)}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 5. Risk & Sanity Scan
+      const rs = currentData.riskScan || {};
+      const riskEl = document.getElementById('riskGrade');
+      riskEl.innerText = rs.riskGrade || 'PASSED';
+      riskEl.style.color = rs.riskGrade === 'CRITICAL' ? 'var(--rose)' : (rs.riskGrade === 'MEDIUM' ? 'var(--amber)' : 'var(--green)');
+
+      document.getElementById('riskLeaks').innerText = rs.hasSecretLeak ? '⚠️ DETECTED' : '0';
+      document.getElementById('riskTruncates').innerText = rs.hasDestructiveEdit ? '⚠️ DETECTED' : '0';
+      document.getElementById('riskDoomLoops').innerText = rs.hasCommandDoomLoop ? '⚠️ DETECTED' : '0';
+
+      const rBody = document.getElementById('riskTableBody');
+      const rList = rs.findings || [];
+      if (!rList.length) {
+        rBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No security or sanity risks detected.</td></tr>';
+      } else {
+        rBody.innerHTML = rList.map(f => {
+          let sevColor = f.severity === 'CRITICAL' ? '#f87171' : '#fbbf24';
+          return `
+            <tr>
+              <td><strong>#${f.stepIndex}</strong></td>
+              <td><span class="badge" style="background: rgba(239, 68, 68, 0.2); color: ${sevColor};">${f.severity}</span></td>
+              <td><code>${f.category}</code></td>
+              <td>${escapeHtml(f.message)}</td>
+              <td><code>${escapeHtml(f.evidence)}</code></td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 6. Tokens & Cost ($)
+      const cm = currentData.costMetrics || {};
+      document.getElementById('costTotal').innerText = `$${(cm.estimatedCostUsd || 0).toFixed(4)}`;
+      document.getElementById('tokensTotal').innerText = (cm.totalTokens || 0).toLocaleString();
+      document.getElementById('tokensInput').innerText = (cm.inputTokens || 0).toLocaleString();
+      document.getElementById('tokensOutput').innerText = (cm.outputTokens || 0).toLocaleString();
+      document.getElementById('maxContextTokens').innerText = (cm.maxContextTokens || 0).toLocaleString();
+      document.getElementById('costBreakdown').innerText = cm.costBreakdown || 'Calculated using standard Gemini Flash pricing tiers.';
+
+      // Context Engineering & Budget Bar
+      const ctx = currentData.contextMetrics || {};
+      const sys = ctx.systemPromptTokens || 2500;
+      const src = ctx.sourceCodeTokens || Math.round((cm.inputTokens || 3000) * 0.5);
+      const think = ctx.reasoningTokens || Math.round((cm.outputTokens || 1000) * 0.4);
+      const tool = ctx.toolOutputTokens || Math.round((cm.inputTokens || 1000) * 0.2);
+      const noise = ctx.terminalNoiseTokens || Math.round((cm.inputTokens || 500) * 0.1);
+      const ctxTotal = Math.max(1, sys + src + think + tool + noise);
+
+      const sysBar = document.getElementById('ctxSysBar');
+      if (sysBar) {
+        sysBar.style.width = Math.round((sys / ctxTotal) * 100) + '%';
+        document.getElementById('ctxSrcBar').style.width = Math.round((src / ctxTotal) * 100) + '%';
+        document.getElementById('ctxThinkBar').style.width = Math.round((think / ctxTotal) * 100) + '%';
+        document.getElementById('ctxToolBar').style.width = Math.round((tool / ctxTotal) * 100) + '%';
+        document.getElementById('ctxNoiseBar').style.width = Math.round((noise / ctxTotal) * 100) + '%';
+
+        document.getElementById('ctxSysText').innerText = sys.toLocaleString() + ' tok';
+        document.getElementById('ctxSrcText').innerText = src.toLocaleString() + ' tok';
+        document.getElementById('ctxThinkText').innerText = think.toLocaleString() + ' tok';
+        document.getElementById('ctxToolText').innerText = tool.toLocaleString() + ' tok';
+        document.getElementById('ctxNoiseText').innerText = noise.toLocaleString() + ' tok';
+
+        if (ctx.contextPoisoningDetected) {
+          document.getElementById('ctxPoisonAlert').style.display = 'block';
+          document.getElementById('ctxPoisonReason').innerText = ctx.poisoningReason || 'High terminal command output consumed >25% of context.';
+        } else {
+          document.getElementById('ctxPoisonAlert').style.display = 'none';
+        }
+
+        document.getElementById('ctxCacheHits').innerText = (ctx.cacheHitTokens || 0).toLocaleString();
+        document.getElementById('ctxCacheSavings').innerText = '$' + (ctx.cacheSavingsUsd || 0).toFixed(4);
+      }
+
+      // 7. Time & Bottlenecks
+      const tm = currentData.timeMetrics || {};
+      document.getElementById('timeTotal').innerText = formatTime(tm.totalDurationSec || 0);
+      document.getElementById('timeReasoning').innerText = formatTime(tm.reasoningDurationSec || 0);
+      document.getElementById('timeCommands').innerText = formatTime(tm.commandDurationSec || 0);
+      document.getElementById('timeEdits').innerText = formatTime(tm.fileEditDurationSec || 0);
+
+      const bBody = document.getElementById('bottlenecksBody');
+      const bList = tm.bottlenecks || [];
+      if (!bList.length) {
+        bBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No significant latency bottlenecks detected.</td></tr>';
+      } else {
+        bBody.innerHTML = bList.map(b => `
+          <tr>
+            <td><strong>#${b.stepIndex}</strong></td>
+            <td><strong style="color: #fbbf24;">${b.durationSec}s</strong></td>
+            <td><span class="badge badge-cmd">${b.category}</span></td>
+            <td><code>${escapeHtml(b.summary)}</code></td>
+            <td style="color: var(--text-muted);">${escapeHtml(b.diagnosis)}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 8. Plan vs. Reality
+      const pa = currentData.planAudit || {};
+      document.getElementById('planAdherence').innerText = pa.hasPlan ? `${pa.adherenceRate}%` : 'N/A';
+      document.getElementById('planPlannedCount').innerText = (pa.plannedFiles || []).length;
+      document.getElementById('planExecutedCount').innerText = (pa.executedFiles || []).length;
+      document.getElementById('planUnplannedCount').innerText = (pa.unplannedEdits || []).length;
+
+      const pBody = document.getElementById('planAuditBody');
+      if (!pa.hasPlan) {
+        pBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No implementation_plan.md found for this session.</td></tr>';
+      } else {
+        let rows = '';
+        (pa.plannedAndDone || []).forEach(f => {
+          rows += `<tr><td><span class="badge badge-new">✅ Executed</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #86efac;">Executed according to the implementation plan.</td></tr>`;
+        });
+        (pa.unplannedEdits || []).forEach(f => {
+          rows += `<tr><td><span class="badge badge-edit">⚠️ Scope Creep</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #fde68a;">Modified by agent, but not listed in the original plan.</td></tr>`;
+        });
+        (pa.plannedAndMissed || []).forEach(f => {
+          rows += `<tr><td><span class="badge badge-cmd">❌ Missed</span></td><td><code>${escapeHtml(f)}</code></td><td style="color: #fca5a5;">Mentioned in plan, but agent stopped before modifying it.</td></tr>`;
+        });
+        pBody.innerHTML = rows || '<tr><td colspan="3">No file deviations.</td></tr>';
+      }
+
+      // 9. Churn Matrix
+      const cBody = document.getElementById('churnTableBody');
+      const stats = currentData.fileStats || [];
+      if (!stats.length) {
+        cBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No files modified.</td></tr>';
+      } else {
+        cBody.innerHTML = stats.sort((a,b) => (b.edits+b.creates) - (a.edits+a.creates)).map(s => {
+          let badge = '<span class="badge badge-read">Low</span>';
+          if (s.churnLevel === 'HIGH') badge = '<span class="badge badge-churn-high">🔥 High Churn</span>';
+          else if (s.churnLevel === 'MEDIUM') badge = '<span class="badge badge-churn-med">Medium</span>';
+
+          return `
+            <tr>
+              <td>${badge}</td>
+              <td><span class="file-link" onclick="openFile('${escapeJs(s.path)}')">${escapeHtml(s.filename)}</span></td>
+              <td><strong>${s.edits}</strong></td>
+              <td>${s.creates}</td>
+              <td>${s.views}</td>
+              <td><button class="btn-action" onclick="openFile('${escapeJs(s.path)}')">Open</button></td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 10. Filter Counts & Step List
+      const allSteps = currentData.steps || [];
+      const editSteps = allSteps.filter(s => (s.tool_calls || []).some(tc => tc.name === 'replace_file_content' || tc.name === 'write_to_file'));
+      const cmdSteps = allSteps.filter(s => (s.tool_calls || []).some(tc => tc.name === 'run_command'));
+      const warnSteps = allSteps.filter(s => s.status === 'ERROR' || (currentData.diagnosticReport?.incidents || []).some(inc => inc.stepIndex === s.step_index));
+      const thinkSteps = allSteps.filter(s => Boolean(s.thinking));
+
+      document.getElementById('countAll').innerText = allSteps.length;
+      document.getElementById('countEdits').innerText = editSteps.length;
+      document.getElementById('countCmds').innerText = cmdSteps.length;
+      document.getElementById('countWarns').innerText = warnSteps.length;
+      document.getElementById('countThink').innerText = thinkSteps.length;
+
+      renderStepsList();
+
+      // 11. Artifacts, Task Logs, and Scratchpad
+      const taskLogsEl = document.getElementById('taskLogsContainer');
+      const logs = (currentData.artifacts && currentData.artifacts.taskLogs) || [];
+      if (taskLogsEl) {
+        if (logs.length > 0) {
+          taskLogsEl.innerHTML = `
+            <div class="chart-box">
+              <div class="box-title">🖥️ Decoupled Background Task Logs</div>
+              <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Direct terminal stdout/stderr logs kept out of the main LLM context window.</p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                ${logs.map(l => `<button class="diff-btn" onclick="openTaskLog('${escapeJs(l.path)}')">📜 ${escapeHtml(l.name)}</button>`).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          taskLogsEl.innerHTML = '';
+        }
+      }
+
+      const scratchEl = document.getElementById('scratchFilesContainer');
+      const scratch = (currentData.artifacts && currentData.artifacts.scratchFiles) || [];
+      if (scratchEl) {
+        if (scratch.length > 0) {
+          scratchEl.innerHTML = `
+            <div class="chart-box">
+              <div class="box-title">📝 Agent Scratchpad Directory (scratch/)</div>
+              <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Transient scratch scripts created by the agent for intermediate calculations.</p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                ${scratch.map(p => `<button class="diff-btn" onclick="openFile('${escapeJs(p)}')">📄 ${escapeHtml(p.split(/[\\\\/]/).pop())}</button>`).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          scratchEl.innerHTML = '';
+        }
+      }
+
+      const artContainer = document.getElementById('artifactsContainer');
+      const arts = currentData.artifacts || {};
+      let artHtml = '';
+      if (arts.implementationPlan) {
+        artHtml += `<div class="chart-box"><h3 style="color: var(--accent); margin-bottom: 10px;">Implementation Plan</h3>${marked.parse(arts.implementationPlan)}</div>`;
+      }
+      if (arts.walkthrough) {
+        artHtml += `<div class="chart-box"><h3 style="color: var(--accent); margin-bottom: 10px;">Walkthrough</h3>${marked.parse(arts.walkthrough)}</div>`;
+      }
+      artContainer.innerHTML = artHtml || '<p style="color: var(--text-muted);">No artifacts found.</p>';
+    }
+
+    function setStepFilter(filter) {
+      activeStepFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      if (filter === 'all') document.getElementById('filterAll').classList.add('active');
+      else if (filter === 'edits') document.getElementById('filterEdits').classList.add('active');
+      else if (filter === 'cmds') document.getElementById('filterCmds').classList.add('active');
+      else if (filter === 'warns') document.getElementById('filterWarns').classList.add('active');
+      else if (filter === 'think') document.getElementById('filterThink').classList.add('active');
+      renderStepsList();
+    }
+
+    function onSearchSteps(e) {
+      stepSearchQuery = (e.target.value || '').toLowerCase().trim();
+      renderStepsList();
+    }
+
+    function renderStepsList() {
+      if (!currentData || !currentData.steps) return;
+      const stepsContainer = document.getElementById('stepsContainer');
+      const allSteps = currentData.steps;
+
+      const filtered = allSteps.map((s, idx) => ({ step: s, originalIdx: idx })).filter(({ step }) => {
+        if (activeStepFilter === 'edits') {
+          const hasEdit = (step.tool_calls || []).some(tc => tc.name === 'replace_file_content' || tc.name === 'write_to_file');
+          if (!hasEdit) return false;
+        } else if (activeStepFilter === 'cmds') {
+          const hasCmd = (step.tool_calls || []).some(tc => tc.name === 'run_command');
+          if (!hasCmd) return false;
+        } else if (activeStepFilter === 'warns') {
+          const isWarn = step.status === 'ERROR' || (currentData.diagnosticReport?.incidents || []).some(inc => inc.stepIndex === step.step_index);
+          if (!isWarn) return false;
+        } else if (activeStepFilter === 'think') {
+          if (!step.thinking) return false;
+        }
+
+        if (stepSearchQuery) {
+          const text = ((step.content || '') + ' ' + (step.thinking || '') + ' ' + JSON.stringify(step.tool_calls || [])).toLowerCase();
+          if (!text.includes(stepSearchQuery)) return false;
+        }
+        return true;
+      });
+
+      if (!filtered.length) {
+        stepsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No steps matched the selected filter or search.</p>';
+        return;
+      }
+
+      stepsContainer.innerHTML = filtered.map(({ step: s, originalIdx: idx }) => {
+        const isUser = s.source === 'USER_EXPLICIT' || s.type === 'USER_INPUT';
+        const author = isUser ? 'User' : 'Agent';
+        let body = '';
+        if (s.thinking) {
+          body += `<details class="thinking-box"><summary>💭 Model Chain-of-Thought (${s.durationSec || 0}s)</summary><div style="white-space: pre-wrap; margin-top: 6px;">${escapeHtml(s.thinking)}</div></details>`;
+        }
+        if (s.content) {
+          body += `<div>${marked.parse(s.content)}</div>`;
+        }
+        if (s.tool_calls) {
+          s.tool_calls.forEach((tc, tcIdx) => {
+            let diffHtml = '';
+            if (tc.delta) {
+              const delta = tc.delta;
+              const origLines = (delta.targetContent || '').split('\n').filter(Boolean).length;
+              const newLines = (delta.replacementContent || delta.codeContent || '').split('\n').filter(Boolean).length;
+              const diffLines = (delta.unifiedDiff || '').split('\n');
+
+              const linesRendered = diffLines.map(line => {
+                let cls = 'diff-line';
+                if (line.startsWith('+') && !line.startsWith('+++')) cls += ' add';
+                else if (line.startsWith('-') && !line.startsWith('---')) cls += ' del';
+                else if (line.startsWith('@@')) cls += ' hdr';
+                return `<span class="${cls}">${escapeHtml(line)}</span>`;
+              }).join('');
+
+              diffHtml = `
+                <div class="diff-container" id="diffBox_${idx}_${tcIdx}">
+                  <div class="diff-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <strong>↔️ Code Delta:</strong>
+                      <span class="file-link" onclick="openFile('${escapeJs(delta.targetPath)}')">${escapeHtml(delta.filename)}</span>
+                      <span class="badge ${delta.action === 'NEW' ? 'badge-new' : 'badge-edit'}">${delta.action}</span>
+                      <span style="font-size: 10px; color: var(--text-muted);">(-${origLines} / +${newLines} lines)</span>
+                    </div>
+                    <div class="diff-actions">
+                      <button class="diff-btn" onclick="openNativeDiff(${idx}, ${tcIdx})" title="Open in VS Code Native Split Diff Editor">↔️ Native Diff</button>
+                      <button class="diff-btn" onclick="toggleSplitDiff(this, ${idx}, ${tcIdx})">🔀 Split View</button>
+                      <button class="diff-btn" onclick="copyStepReversePatch(this, ${idx}, ${tcIdx})">📋 Copy Patch</button>
+                      <button class="diff-btn" onclick="runSingleRollback('${escapeJs(delta.targetPath)}')">⏪ Revert</button>
+                    </div>
+                  </div>
+                  <div class="diff-content" id="unifiedDiff_${idx}_${tcIdx}">${linesRendered}</div>
+                  <div class="diff-split" id="splitDiff_${idx}_${tcIdx}" style="display: none;">
+                    <div class="diff-pane"><strong style="color: var(--rose, #ff7b72);">Original (Before Edit):</strong><pre style="margin: 4px 0;">${escapeHtml(delta.targetContent || '(Empty or new file)')}</pre></div>
+                    <div class="diff-pane"><strong style="color: var(--green, #7ee787);">Replacement (After Edit):</strong><pre style="margin: 4px 0;">${escapeHtml(delta.replacementContent || delta.codeContent || '')}</pre></div>
+                  </div>
+                </div>
+              `;
+            }
+
+            body += `
+              <div class="tool-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #fbbf24;">${escapeHtml(tc.name)}</strong>
+                  ${tc.delta ? '<span class="badge badge-new">DELTA READY</span>' : ''}
+                </div>
+                <pre style="margin: 0;">${escapeHtml(JSON.stringify(tc.args, null, 2))}</pre>
+                ${diffHtml}
+              </div>
+            `;
+          });
+        }
+        return `<div class="step-card ${idx === currentScrubIndex ? 'scrub-active' : ''}" id="stepCard_${idx}"><div class="step-header"><span>Step #${s.step_index} - ${author}</span><span>${s.durationSec || 0}s &bull; ${(s.created_at || '').substring(11, 19)}</span></div><div class="step-body">${body}</div></div>`;
+      }).join('');
+    }
+
+    /* Diff & Rollback Handlers */
+    function openNativeDiff(stepIdx, tcIdx) {
+      if (!currentData || !currentData.steps) return;
+      const step = currentData.steps[stepIdx];
+      const tc = step?.tool_calls?.[tcIdx];
+      if (tc && tc.delta) {
+        vscode.postMessage({
+          command: 'openNativeDiff',
+          originalContent: tc.delta.targetContent || '',
+          replacementContent: tc.delta.replacementContent || tc.delta.codeContent || '',
+          filename: tc.delta.filename,
+          stepIndex: step.step_index
+        });
+      }
+    }
+
+    function toggleSplitDiff(btn, stepIdx, tcIdx) {
+      const uEl = document.getElementById(`unifiedDiff_${stepIdx}_${tcIdx}`);
+      const sEl = document.getElementById(`splitDiff_${stepIdx}_${tcIdx}`);
+      if (!uEl || !sEl) return;
+      if (sEl.style.display === 'none') {
+        sEl.style.display = 'grid';
+        uEl.style.display = 'none';
+        btn.innerText = '☰ Unified View';
+      } else {
+        sEl.style.display = 'none';
+        uEl.style.display = 'block';
+        btn.innerText = '🔀 Split View';
+      }
+    }
+
+    function copyStepReversePatch(btn, stepIdx, tcIdx) {
+      if (!currentData || !currentData.steps) return;
+      const step = currentData.steps[stepIdx];
+      const tc = step?.tool_calls?.[tcIdx];
+      if (tc && tc.delta) {
+        flashButtonSuccess(btn, '✅ Patch Copied!');
+        vscode.postMessage({
+          command: 'copyToClipboard',
+          text: tc.delta.reversePatch || tc.delta.unifiedDiff,
+          toast: `Revert patch for Step #${step.step_index} copied to clipboard!`
+        });
+      }
+    }
+
+    function runSingleRollback(path) {
+      vscode.postMessage({
+        command: 'runInTerminal',
+        command: `git restore "${path}"`
+      });
+    }
+
+    function copyFullRollbackCmd(btn) {
+      const cmd = currentData?.rollbackPlan?.fullRollbackCommand || 'git restore .';
+      flashButtonSuccess(btn, '✅ Command Copied!');
+      vscode.postMessage({
+        command: 'copyToClipboard',
+        text: cmd,
+        toast: 'Full session rollback command copied to clipboard!'
+      });
+    }
+
+    function runRollbackInTerminal() {
+      const cmd = currentData?.rollbackPlan?.fullRollbackCommand || 'git restore .';
+      vscode.postMessage({
+        command: 'runInTerminal',
+        command: cmd
+      });
+    }
+
+    function exportFullPatch() {
+      if (!currentData) return;
+      const patches = [];
+      (currentData.fileEvents || []).forEach(e => {
+        if (e.delta?.reversePatch) {
+          patches.push(e.delta.reversePatch);
+        }
+      });
+      const fullPatch = patches.join('\n\n') || '# No reverse patch available';
+      vscode.postMessage({
+        command: 'exportPatchFile',
+        patchContent: fullPatch
+      });
+    }
+
+    function toggleSelectAllRollback(master) {
+      document.querySelectorAll('.file-rb-checkbox').forEach(cb => cb.checked = master.checked);
+      updateSelectedRollbackCount();
+    }
+
+    function updateSelectedRollbackCount() {
+      const checked = document.querySelectorAll('.file-rb-checkbox:checked');
+      const txt = document.getElementById('selectedFilesCountText');
+      if (txt) txt.innerText = `${checked.length} file(s) selected`;
+    }
+
+    function copySelectedRollbackCmd(btn) {
+      const paths = [];
+      document.querySelectorAll('.file-rb-checkbox:checked').forEach(cb => {
+        paths.push(`"${cb.getAttribute('data-path')}"`);
+      });
+      if (!paths.length) {
+        vscode.postMessage({ command: 'copyToClipboard', text: '', toast: 'No files selected.' });
+        return;
+      }
+      flashButtonSuccess(btn, '✅ Command Copied!');
+      const cmd = `git restore ${paths.join(' ')}`;
+      vscode.postMessage({
+        command: 'copyToClipboard',
+        text: cmd,
+        toast: `Rollback command for ${paths.length} file(s) copied to clipboard!`
+      });
+    }
+
+    function jumpToActiveDelta() {
+      switchTab('tab-transcript');
+      const activeCard = document.getElementById(`stepCard_${currentScrubIndex}`);
+      if (activeCard) {
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    /* Time-Travel VCR Scrubber Functions */
+    function onSliderInput(e) {
+      scrubStep(parseInt(e.target.value, 10));
+    }
+
+    function scrubStep(idx) {
+      if (!currentData || !currentData.steps || !currentData.steps.length) return;
+      currentScrubIndex = Math.max(0, Math.min(idx, currentData.steps.length - 1));
+      document.getElementById('timeTravelSlider').value = currentScrubIndex;
+      updateScrubUI();
+    }
+
+    function stepForward() { scrubStep(currentScrubIndex + 1); }
+    function stepBackward() { scrubStep(currentScrubIndex - 1); }
+    function scrubToEnd() { if (currentData && currentData.steps) scrubStep(currentData.steps.length - 1); }
+
+    function updateScrubUI() {
+      if (!currentData || !currentData.steps) return;
+      const total = currentData.steps.length;
+      document.getElementById('scrubCounter').innerText = `Step ${currentScrubIndex + 1} / ${total}`;
+
+      const step = currentData.steps[currentScrubIndex];
+      const deltaPill = document.getElementById('scrubDeltaPill');
+      const deltaText = document.getElementById('scrubDeltaText');
+
+      if (step) {
+        let status = `Step #${step.step_index}: `;
+        let hasDelta = false;
+
+        if (step.tool_calls && step.tool_calls.length) {
+          const tc = step.tool_calls[0];
+          status += `Agent running ${tc.name}`;
+          if (tc.delta) {
+            hasDelta = true;
+            deltaText.innerText = `Delta: ${tc.delta.filename} (${tc.delta.action})`;
+          }
+        } else if (step.thinking) {
+          status += 'Agent thinking & evaluating strategy';
+        } else {
+          status += (step.source === 'USER_EXPLICIT' ? 'User input' : 'Response');
+        }
+        document.getElementById('scrubStatus').innerText = status;
+
+        if (hasDelta) {
+          deltaPill.classList.add('visible');
+        } else {
+          deltaPill.classList.remove('visible');
+        }
+      }
+
+      // Highlight step card
+      document.querySelectorAll('.step-card').forEach(c => c.classList.remove('scrub-active'));
+      const activeCard = document.getElementById(`stepCard_${currentScrubIndex}`);
+      if (activeCard) {
+        activeCard.classList.add('scrub-active');
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pausePlay();
+      } else {
+        startPlay();
+      }
+    }
+
+    function startPlay() {
+      isPlaying = true;
+      document.getElementById('playBtn').innerText = '⏸ Pause';
+      document.getElementById('playBtn').classList.add('active');
+
+      const interval = 1200 / playSpeed;
+      playTimer = setInterval(() => {
+        if (!currentData || !currentData.steps || currentScrubIndex >= currentData.steps.length - 1) {
+          pausePlay();
+        } else {
+          scrubStep(currentScrubIndex + 1);
+        }
+      }, interval);
+    }
+
+    function pausePlay() {
+      isPlaying = false;
+      clearInterval(playTimer);
+      document.getElementById('playBtn').innerText = '▶ Play';
+      document.getElementById('playBtn').classList.remove('active');
+    }
+
+    function setSpeed(s) {
+      playSpeed = s;
+      document.querySelectorAll('#speed1x, #speed2x, #speed4x').forEach(b => b.classList.remove('active'));
+      document.getElementById(`speed${s}x`).classList.add('active');
+      if (isPlaying) {
+        pausePlay();
+        startPlay();
+      }
+    }
+
+    /* Standalone HTML PR Report Export */
+    function exportStandaloneHtml() {
+      if (!currentData) return;
+      const clone = document.documentElement.cloneNode(true);
+      const cleanHtml = '<!DOCTYPE html>\n' + clone.outerHTML;
+      vscode.postMessage({ command: 'exportHtmlReport', htmlContent: cleanHtml });
+    }
+
+    function formatTime(sec) {
+      if (sec < 60) return sec + 's';
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}m ${s}s`;
+    }
+
+    function openFile(path) {
+      vscode.postMessage({ command: 'openFile', path: path });
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'tab-leaderboard') {
+        fetchLeaderboard();
+      }
+    }
+
+    /* Session Comparator Logic */
+    function populateComparisonDropdown() {
+      const select = document.getElementById('compareSessionSelect');
+      if (!select) return;
+      const curId = currentData ? currentData.conversationId : '';
+      let options = '<option value="">-- Choose another session to benchmark against --</option>';
+      availableSessions.forEach(s => {
+        if (s.conversationId !== curId) {
+          options += `<option value="${escapeHtml(s.conversationId)}">${escapeHtml(s.title || s.conversationId.substring(0, 8))} (${s.stepCount} steps - ${s.conversationId.substring(0, 8)})</option>`;
+        }
+      });
+      select.innerHTML = options;
+    }
+
+    function onSelectCompareSession(convId) {
+      if (!convId) {
+        document.getElementById('compareResults').style.display = 'none';
+        document.getElementById('compareEmptyPrompt').style.display = 'block';
+        return;
+      }
+      vscode.postMessage({
+        command: 'loadComparisonSession',
+        conversationId: convId
+      });
+    }
+
+    function refreshComparison() {
+      const select = document.getElementById('compareSessionSelect');
+      if (select && select.value) {
+        onSelectCompareSession(select.value);
+      }
+    }
+
+    function renderComparison() {
+      if (!currentData || !comparisonData) return;
+      document.getElementById('compareEmptyPrompt').style.display = 'none';
+      document.getElementById('compareResults').style.display = 'block';
+
+      const a = currentData;
+      const b = comparisonData;
+
+      // Titles
+      document.getElementById('compNameA').innerText = a.title || a.conversationId.substring(0, 8);
+      document.getElementById('compNameB').innerText = b.title || b.conversationId.substring(0, 8);
+
+      // Metrics A
+      const healthA = a.diagnosticReport?.healthScore || 100;
+      const planA = a.planAudit?.hasPlan ? a.planAudit.adherenceRate : 100;
+      const costA = a.costMetrics?.estimatedCostUsd || 0;
+      const timeA = a.timeMetrics?.totalDurationSec || 0;
+      const stepsA = (a.steps || []).length;
+      const tokensA = a.costMetrics?.totalTokens || 0;
+      const filesA = a.fileStats || [];
+      const errorsA = (a.diagnosticReport?.incidents || []).length;
+      const riskA = a.riskScan?.riskGrade || 'PASSED';
+
+      // Metrics B
+      const healthB = b.diagnosticReport?.healthScore || 100;
+      const planB = b.planAudit?.hasPlan ? b.planAudit.adherenceRate : 100;
+      const costB = b.costMetrics?.estimatedCostUsd || 0;
+      const timeB = b.timeMetrics?.totalDurationSec || 0;
+      const stepsB = (b.steps || []).length;
+      const tokensB = b.costMetrics?.totalTokens || 0;
+      const filesB = b.fileStats || [];
+      const errorsB = (b.diagnosticReport?.incidents || []).length;
+      const riskB = b.riskScan?.riskGrade || 'PASSED';
+
+      // Render Col A
+      document.getElementById('compHealthA').innerText = `${healthA} / 100`;
+      document.getElementById('compPlanA').innerText = a.planAudit?.hasPlan ? `${planA}%` : 'N/A';
+      document.getElementById('compCostA').innerText = `$${costA.toFixed(4)}`;
+      document.getElementById('compTimeA').innerText = formatTime(timeA);
+      document.getElementById('compStepsA').innerText = stepsA;
+      document.getElementById('compTokensA').innerText = tokensA.toLocaleString();
+      document.getElementById('compFilesA').innerText = filesA.length;
+      document.getElementById('compErrorsA').innerText = errorsA;
+      document.getElementById('compRiskA').innerText = riskA;
+
+      // Comparative delta helper
+      function deltaHtml(valA, valB, lowerIsBetter, unit = '', isCurrency = false) {
+        if (valA === valB) return `<span class="delta-badge delta-neutral">Same</span>`;
+        const better = lowerIsBetter ? (valB < valA) : (valB > valA);
+        const cls = better ? 'delta-win' : 'delta-lose';
+        const diff = Math.abs(valB - valA);
+        const prefix = valB > valA ? '+' : '-';
+        const formatted = isCurrency ? `$${diff.toFixed(4)}` : `${diff}${unit}`;
+        return `<span class="delta-badge ${cls}">${prefix}${formatted}</span>`;
+      }
+
+      document.getElementById('compHealthB').innerHTML = `${healthB} / 100 ${deltaHtml(healthA, healthB, false, ' pts')}`;
+      document.getElementById('compPlanB').innerHTML = b.planAudit?.hasPlan ? `${planB}% ${deltaHtml(planA, planB, false, '%')}` : 'N/A';
+      document.getElementById('compCostB').innerHTML = `$${costB.toFixed(4)} ${deltaHtml(costA, costB, true, '', true)}`;
+      document.getElementById('compTimeB').innerHTML = `${formatTime(timeB)} ${deltaHtml(timeA, timeB, true, 's')}`;
+      document.getElementById('compStepsB').innerHTML = `${stepsB} ${deltaHtml(stepsA, stepsB, true, ' steps')}`;
+      document.getElementById('compTokensB').innerHTML = `${tokensB.toLocaleString()} ${deltaHtml(tokensA, tokensB, true, ' tok')}`;
+      document.getElementById('compFilesB').innerHTML = `${filesB.length} ${deltaHtml(filesA.length, filesB.length, true, ' files')}`;
+      document.getElementById('compErrorsB').innerHTML = `${errorsB} ${deltaHtml(errorsA, errorsB, true, ' errs')}`;
+      document.getElementById('compRiskB').innerHTML = `${riskB}`;
+
+      // Verdict Calculation
+      let winsA = 0;
+      let winsB = 0;
+      if (healthA > healthB) winsA++; else if (healthB > healthA) winsB++;
+      if (costA < costB) winsA++; else if (costB < costA) winsB++;
+      if (timeA < timeB) winsA++; else if (timeB < timeA) winsB++;
+      if (errorsA < errorsB) winsA++; else if (errorsB < errorsA) winsB++;
+
+      const banner = document.getElementById('compareVerdictBanner');
+      if (winsA > winsB) {
+        banner.className = 'alert-box alert-success';
+        banner.innerHTML = `<strong>🏆 Benchmark Verdict: Active Session (A) was more optimal.</strong> It proved more cost-effective, faster, or had fewer errors than Target Session (B).`;
+      } else if (winsB > winsA) {
+        banner.className = 'alert-box alert-warning';
+        banner.innerHTML = `<strong>⚖️ Benchmark Verdict: Target Session (B) outperformed Active Session (A).</strong> It showed fewer incidents or more efficient token/time resource usage.`;
+      } else {
+        banner.className = 'alert-box alert-success';
+        banner.innerHTML = `<strong>⚖️ Benchmark Verdict: Balanced Execution.</strong> Both sessions exhibited similar performance profiles and health metrics.`;
+      }
+
+      // File Footprint Diff Table
+      const setA = new Set(filesA.map(f => f.path));
+      const setB = new Set(filesB.map(f => f.path));
+      const allPaths = Array.from(new Set([...setA, ...setB]));
+
+      const rows = allPaths.map(p => {
+        const inA = setA.has(p);
+        const inB = setB.has(p);
+        const statA = filesA.find(f => f.path === p);
+        const statB = filesB.find(f => f.path === p);
+
+        let statusBadge = '';
+        if (inA && inB) {
+          statusBadge = '<span class="badge badge-read" style="background: rgba(56,189,248,0.2); color: #38bdf8;">Common Both</span>';
+        } else if (inA) {
+          statusBadge = '<span class="badge badge-new">Only Session A</span>';
+        } else {
+          statusBadge = '<span class="badge badge-edit">Only Session B</span>';
+        }
+
+        const editsA = statA ? `${statA.edits + statA.creates} edit(s)` : '<span style="color: var(--text-muted);">-</span>';
+        const editsB = statB ? `${statB.edits + statB.creates} edit(s)` : '<span style="color: var(--text-muted);">-</span>';
+
+        return `
+          <tr>
+            <td>${statusBadge}</td>
+            <td><code>${escapeHtml(p)}</code></td>
+            <td><strong>${editsA}</strong></td>
+            <td><strong>${editsB}</strong></td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('compFileTableBody').innerHTML = rows || '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">No modified files found in either session.</td></tr>';
+    }
+
+    /* Leaderboard Logic */
+    function fetchLeaderboard() {
+      vscode.postMessage({ command: 'getLeaderboard' });
+    }
+
+    function renderLeaderboard(lb) {
+      if (!lb) return;
+      const fEl = document.getElementById('lbFastestAgent');
+      if (fEl) fEl.innerText = lb.fastestAgent || '--';
+      const cEl = document.getElementById('lbCheapestAgent');
+      if (cEl) cEl.innerText = lb.cheapestAgent || '--';
+      const rEl = document.getElementById('lbReliableAgent');
+      if (rEl) rEl.innerText = lb.mostReliableAgent || '--';
+      const tEl = document.getElementById('lbTotalSessions');
+      if (tEl) tEl.innerText = lb.totalSessions || 0;
+
+      const body = document.getElementById('leaderboardBody');
+      if (!body) return;
+      const entries = lb.entries || [];
+      if (!entries.length) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No agent sessions recorded in this repository yet.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = entries.map(e => {
+        let brandClass = 'brand-badge-antigravity';
+        if (e.brand === 'claude') brandClass = 'brand-badge-claude';
+        else if (e.brand === 'codex') brandClass = 'brand-badge-codex';
+
+        return `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge ${brandClass}">${(e.brand || '').toUpperCase()}</span>
+                <strong>${escapeHtml(e.modelName)}</strong>
+              </div>
+            </td>
+            <td><strong>${e.totalSessions}</strong></td>
+            <td style="color: #4ade80;">$${(e.avgCostUsd || 0).toFixed(4)}</td>
+            <td>${formatTime(e.avgDurationSec || 0)}</td>
+            <td><strong style="color: #38bdf8;">${e.firstPassSuccessRate || 100}%</strong></td>
+            <td>${e.planAdherenceRate}%</td>
+            <td style="color: ${e.totalIncidents > 0 ? '#f87171' : 'var(--text-muted)'};">${e.totalIncidents}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function flashButtonSuccess(btn, text = '✅ Copied!') {
+      if (!btn) return;
+      const orig = btn.innerText;
+      btn.innerText = text;
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btn.innerText = orig;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1500);
+    }
+
+    function filterTabCategory(cat, btn) {
+      document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      let firstMatchingTabId = null;
+      let activeTabStillVisible = false;
+
+      tabBtns.forEach(t => {
+        const tCat = t.getAttribute('data-cat');
+        if (cat === 'all' || tCat === cat) {
+          t.style.display = 'inline-block';
+          if (!firstMatchingTabId) {
+            const m = t.getAttribute('onclick')?.match(/'([^']+)'/);
+            if (m) firstMatchingTabId = m[1];
+          }
+          if (t.classList.contains('active')) {
+            activeTabStillVisible = true;
+          }
+        } else {
+          t.style.display = 'none';
+        }
+      });
+
+      if (!activeTabStillVisible && firstMatchingTabId) {
+        switchTab(firstMatchingTabId);
+      }
+    }
+
+    function onModalOverlayClick(event) {
+      if (event.target && event.target.id === 'forkModal') {
+        closeForkModal();
+      }
+    }
+
+    /* Agent Fork / Hand-Off Modal Logic */
+    let selectedForkTarget = 'claude';
+
+    function openForkModal() {
+      if (!currentData) return;
+      const modal = document.getElementById('forkModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        updateForkPreview();
+      }
+    }
+
+    function closeForkModal() {
+      const modal = document.getElementById('forkModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function setForkTarget(target) {
+      selectedForkTarget = target;
+      document.querySelectorAll('.fork-target-card').forEach(c => c.classList.remove('selected'));
+      const activeCard = document.getElementById(`forkTarget_${target}`);
+      if (activeCard) activeCard.classList.add('selected');
+      updateForkPreview();
+    }
+
+    function updateForkPreview() {
+      if (!currentData) return;
+      const previewBox = document.getElementById('forkPromptPreview');
+      if (!previewBox) return;
+      const modFiles = (currentData.fileStats || []).map(f => f.path).slice(0, 5).join(', ');
+      const previewText = `[AGENT HAND-OFF TO ${selectedForkTarget.toUpperCase()}]\nTask: ${currentData.title || currentData.conversationId}\nPrevious Agent: ${(currentData.brand || 'antigravity').toUpperCase()} (${currentData.modelName || 'Gemini'})\nFiles Touched: ${modFiles || 'None'} (${(currentData.fileStats || []).length} total)\nGoal: Continue execution, maintain plan fidelity, and resolve pending requirements.`;
+      previewBox.innerText = previewText;
+    }
+
+    function executeFork(btn) {
+      if (!currentData) return;
+      flashButtonSuccess(btn, '✅ Packet Copied!');
+      vscode.postMessage({
+        command: 'forkSession',
+        targetBrand: selectedForkTarget
+      });
+      setTimeout(() => closeForkModal(), 600);
+    }
+
+    function openTaskLog(path) {
+      vscode.postMessage({
+        command: 'openTaskLog',
+        path: path
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    function escapeJs(str) {
+      if (!str) return '';
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+  </script>
+
+  <!-- Agent Fork & Hand-Off Modal -->
+  <div id="forkModal" class="modal-overlay" onclick="onModalOverlayClick(event)">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; color: var(--accent);">🔄 1-Click Agent Hand-Off / Fork</h3>
+        <button class="player-btn" onclick="closeForkModal()">✕</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+        Handoff this active task to another AI agent CLI or assistant. The context, modified files, plan status, and diagnostic health will be compiled into a standardized hand-off packet and copied to your clipboard.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+        <div id="forkTarget_claude" class="card fork-target-card selected" onclick="setForkTarget('claude')" style="cursor: pointer; text-align: center; padding: 14px 10px;">
+          <div style="font-size: 20px; margin-bottom: 6px;">🟣</div>
+          <div style="font-weight: bold; color: #c084fc;">Claude</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Claude Code / Desktop</div>
+        </div>
+        <div id="forkTarget_antigravity" class="card fork-target-card" onclick="setForkTarget('antigravity')" style="cursor: pointer; text-align: center; padding: 14px 10px;">
+          <div style="font-size: 20px; margin-bottom: 6px;">🔵</div>
+          <div style="font-weight: bold; color: #38bdf8;">Antigravity</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Gemini 2.0 Flash/Pro</div>
+        </div>
+        <div id="forkTarget_codex" class="card fork-target-card" onclick="setForkTarget('codex')" style="cursor: pointer; text-align: center; padding: 14px 10px;">
+          <div style="font-size: 20px; margin-bottom: 6px;">🟢</div>
+          <div style="font-weight: bold; color: #4ade80;">Codex</div>
+          <div style="font-size: 10px; color: var(--text-muted);">OpenAI Codex / GPT</div>
+        </div>
+      </div>
+
+      <div class="box-title" style="margin-bottom: 6px;">📋 Generated Hand-Off Context Preview:</div>
+      <pre id="forkPromptPreview" style="background: var(--vscode-editor-background, #1e1e1e); color: var(--vscode-editor-foreground, #d4d4d4); padding: 10px; border-radius: 6px; font-size: 11px; max-height: 120px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border);"></pre>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="player-btn" onclick="closeForkModal()">Cancel</button>
+        <button class="diff-btn" onclick="executeFork(this)" style="background: var(--accent); color: var(--vscode-editor-background, #0f172a); font-weight: bold; padding: 8px 16px;">📋 Copy Hand-Off Packet</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

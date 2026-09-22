@@ -1,0 +1,96 @@
+{
+  "name": "antigravity-visualizer",
+  "displayName": "AgentLens: Universal AI Observability & Rollback (Antigravity, Claude, Codex)",
+  "description": "Universal AI Agent Observability, Time-Travel VCR Player, Git Rollback Assistant, Context Engineering breakdown, and Cross-Agent Benchmarking Suite for Google Antigravity, Claude, and Codex.",
+  "version": "0.6.1",
+  "publisher": "antigravity-tools",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akmalkhaniub/antigravity-visualizer"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "antigravity",
+    "claude",
+    "claude-code",
+    "codex",
+    "agent",
+    "observability",
+    "context-engineering",
+    "git-rollback",
+    "benchmarks",
+    "gemini",
+    "transcript",
+    "visualization"
+  ],
+  "activationEvents": [
+    "onView:antigravity.sessionList",
+    "onCommand:antigravity.openVisualizer",
+    "onCommand:antigravity.refreshSessions",
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "antigravity-sidebar",
+          "title": "AgentLens (AI Observability)",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "antigravity-sidebar": [
+        {
+          "id": "antigravity.sessionList",
+          "name": "Agent Sessions (Antigravity • Claude • Codex)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "antigravity.openVisualizer",
+        "title": "Open Visualizer Dashboard",
+        "category": "Antigravity"
+      },
+      {
+        "command": "antigravity.refreshSessions",
+        "title": "Refresh Sessions",
+        "category": "Antigravity",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "antigravity.refreshSessions",
+          "when": "view == antigravity.sessionList",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.3"
+  }
+}
