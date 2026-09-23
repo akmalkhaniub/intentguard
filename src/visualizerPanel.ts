@@ -161,6 +161,55 @@ export class VisualizerPanel {
             }
             return;
 
+          case 'forkFromNode':
+            if (message.nodeId && this._currentConversationId) {
+              try {
+                const targetBrand = message.targetBrand || 'claude';
+                const forkPacket = this.sessionManager.forkFromDecisionNode(this._currentConversationId, message.nodeId, targetBrand);
+                await vscode.env.clipboard.writeText(forkPacket.formattedHandOffPrompt);
+                vscode.window.showInformationMessage(
+                  `Decision Node steering packet copied to clipboard! Ready to hand off to ${targetBrand.toUpperCase()}.`
+                );
+              } catch (err: any) {
+                vscode.window.showErrorMessage(`Failed to fork from decision node: ${err.message}`);
+              }
+            }
+            return;
+
+          case 'authorizeSpillFile':
+            if (message.filePath && this._currentConversationId) {
+              const success = this.sessionManager.authorizeSpillFile(this._currentConversationId, message.filePath);
+              if (success) {
+                vscode.window.showInformationMessage(`Authorized "${path.basename(message.filePath)}" and appended to implementation_plan.md.`);
+                this.loadSession(this._currentConversationId);
+              } else {
+                vscode.window.showWarningMessage(`Could not automatically update implementation_plan.md.`);
+              }
+            }
+            return;
+
+          case 'injectSteeringNudge':
+            if (message.nudge) {
+              await vscode.env.clipboard.writeText(message.nudge);
+              vscode.window.showInformationMessage('Steering Nudge copied to clipboard! Paste directly into your agent chat.');
+            }
+            return;
+
+          case 'revertSpillStep':
+            if (message.revertCommand) {
+              const choice = await vscode.window.showWarningMessage(
+                `Execute rollback command in terminal?\n\n${message.revertCommand}`,
+                'Execute Rollback',
+                'Cancel'
+              );
+              if (choice === 'Execute Rollback') {
+                const term = vscode.window.activeTerminal || vscode.window.createTerminal('IntentGuard Rollback');
+                term.show();
+                term.sendText(message.revertCommand);
+              }
+            }
+            return;
+
           case 'openTaskLog':
             if (message.path && fs.existsSync(message.path)) {
               try {

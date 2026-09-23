@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as http from 'http';
 import { AgentBrand, ContextEngineeringMetrics, AgentLeaderboard, AgentForkPacket } from './adapters/types';
 import { AdapterRegistry } from './adapters/adapterRegistry';
-import { IntentGovernor, GovernanceAudit, DeclaredIntent } from './core';
+import { IntentGovernor, GovernanceAudit, DeclaredIntent, DecisionTree, DecisionNode, CircuitBreakerPolicy, LiveInterceptEvent } from './core';
 
 export interface SessionSummary {
   conversationId: string;
@@ -154,6 +154,9 @@ export interface SessionDetail {
   riskScan: RiskScanResult;
   planAudit: PlanAudit;
   governanceAudit?: GovernanceAudit;
+  decisionTree?: DecisionTree;
+  circuitBreakerPolicy?: CircuitBreakerPolicy;
+  liveIntercepts?: LiveInterceptEvent[];
   rollbackPlan: RollbackPlan;
   contextMetrics?: ContextEngineeringMetrics;
   artifacts: {
@@ -946,6 +949,38 @@ export class SessionManager {
       cacheSavingsUsd: (estContextTokens * 0.35) * 0.0000001
     };
 
+    // 10. Tree-of-Thought (ToT) Decision Graph & In-Flight Intercepts
+    const decisionTree: DecisionTree = IntentGovernor.buildDecisionTree(steps, fileEvents, declaredIntent, subagents);
+    const defaultPolicy: CircuitBreakerPolicy = {
+      enforcementMode: 'WARN_ONLY',
+      maxAllowedSpills: 0,
+      shrinkThresholdPercent: 25,
+      blockedCommands: ['rm -rf', 'DROP TABLE', 'git reset --hard', 'format c:'],
+      autoRollbackOnTrip: false
+    };
+
+    const liveIntercepts: LiveInterceptEvent[] = [];
+    for (const fe of fileEvents) {
+      if (fe.action === 'EDIT' || fe.action === 'WRITE' || fe.action === 'COMMAND') {
+        const intercept = IntentGovernor.evaluateRealTimeAction(
+          {
+            stepIndex: fe.stepIndex,
+            toolName: fe.action === 'COMMAND' ? 'run_command' : 'write_to_file',
+            filePath: fe.action !== 'COMMAND' ? fe.path : undefined,
+            command: fe.action === 'COMMAND' ? fe.path : undefined,
+            targetContent: fe.delta?.targetContent,
+            replacementContent: fe.delta?.replacementContent,
+            codeContent: fe.delta?.codeContent
+          },
+          declaredIntent,
+          defaultPolicy
+        );
+        if (intercept) {
+          liveIntercepts.push(intercept);
+        }
+      }
+    }
+
     return {
       conversationId: conversationId,
       brand: 'antigravity',
@@ -973,6 +1008,9 @@ export class SessionManager {
       riskScan: riskScan,
       planAudit: planAudit,
       governanceAudit: governanceAudit,
+      decisionTree: decisionTree,
+      circuitBreakerPolicy: defaultPolicy,
+      liveIntercepts: liveIntercepts,
       rollbackPlan: rollbackPlan,
       contextMetrics: contextMetrics,
       artifacts: artifacts
@@ -985,6 +1023,61 @@ export class SessionManager {
 
   public createForkPacket(sourceDetail: SessionDetail, targetBrand: AgentBrand): AgentForkPacket {
     return AdapterRegistry.getInstance().createForkPacket(sourceDetail as any, targetBrand);
+  }
+
+  public forkFromDecisionNode(conversationId: string, nodeId: string, targetBrand: AgentBrand = 'claude'): AgentForkPacket {
+    const detail = this.getSessionDetail(conversationId);
+    const node = detail.decisionTree?.nodes[nodeId];
+    const upToStep = node ? node.stepIndex : detail.totalSteps;
+
+    const slicedSteps = detail.steps.slice(0, upToStep + 1);
+    const slicedDetail: SessionDetail = {
+      ...detail,
+      totalSteps: slicedSteps.length,
+      steps: slicedSteps
+    };
+
+    const basePacket = this.createForkPacket(slicedDetail, targetBrand);
+    const steeringNudge = node?.steeringNudge || `Forked from Decision Node ${node?.label || nodeId} at step #${upToStep}.`;
+
+    basePacket.formattedHandOffPrompt = `### AGENT FORK & STEERING PACKET (IntentGuard ToT)
+**Source Session:** \`${conversationId.substring(0, 8)}\`
+**Fork Decision Node:** \`${node?.label || nodeId}\` (Step #${upToStep})
+**Decision Rationale:** ${node?.rationale || node?.summary || 'Standard progression'}
+
+#### 🎯 Intent & Steering Nudge:
+> ${steeringNudge}
+
+#### 📁 Files in Scope:
+${(node?.filesTouched || []).map(f => `- \`${f}\``).join('\n') || '- Inherited from plan'}
+
+---
+${basePacket.formattedHandOffPrompt}`;
+
+    return basePacket;
+  }
+
+  public authorizeSpillFile(conversationId: string, filePath: string): boolean {
+    const cBrain = path.join(this.brainDir, conversationId);
+    const planFile = path.join(cBrain, 'implementation_plan.md');
+    const baseName = path.basename(filePath);
+
+    if (fs.existsSync(planFile)) {
+      try {
+        let content = fs.readFileSync(planFile, 'utf8');
+        const fileEntry = `\n#### [MODIFY] [${baseName}](file:///${filePath.replace(/\\/g, '/')})\n- Authorized by developer via IntentGuard Circuit Breaker.\n`;
+        if (content.includes('## Proposed Changes')) {
+          content = content.replace('## Proposed Changes', `## Proposed Changes\n${fileEntry}`);
+        } else {
+          content += `\n\n## Proposed Changes\n${fileEntry}`;
+        }
+        fs.writeFileSync(planFile, content, 'utf8');
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
   }
 
   private auditPlanVsReality(planMarkdown: string | undefined, fileEvents: FileEvent[]): PlanAudit {

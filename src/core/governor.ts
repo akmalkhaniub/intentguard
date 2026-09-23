@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { DeclaredIntent, GovernanceAudit, ScopeViolation, CircuitBreakerState } from './types';
+import { DeclaredIntent, GovernanceAudit, ScopeViolation, CircuitBreakerState, DecisionNode, DecisionTree, CircuitBreakerPolicy, LiveInterceptEvent } from './types';
 
 export class IntentGovernor {
   /**
@@ -197,5 +197,277 @@ export class IntentGovernor {
       verdict,
       verdictSummary
     };
+  }
+
+  /**
+   * Constructs an interactive Tree-of-Thought (ToT) decision graph.
+   * Identifies milestones, exploratory pivots/retries, subagent delegations, and scope spill events.
+   */
+  public static buildDecisionTree(
+    steps: Array<{
+      stepIndex: number;
+      type?: string;
+      toolCalls?: Array<{ toolName: string; args?: any; summary?: string }>;
+      thinking?: string;
+      content?: string;
+      status?: string;
+      timestamp?: string;
+    }>,
+    fileEvents: Array<{ stepIndex: number; action: string; path: string; details?: string }>,
+    declaredIntent: DeclaredIntent,
+    subagents: Array<{ stepIndex: number; role: string; type: string; prompt: string }> = []
+  ): DecisionTree {
+    const nodes: Record<string, DecisionNode> = {};
+    const rootId = 'node-root';
+    let totalBranches = 1;
+    let pivotsCount = 0;
+    let spillsCount = 0;
+
+    // 1. Create Root Decision Node
+    const initialPrompt = steps.find(s => s.type === 'USER_INPUT')?.content || declaredIntent.userGoal || 'User Task Request';
+    const rootSummary = initialPrompt.length > 120 ? initialPrompt.substring(0, 117) + '...' : initialPrompt;
+
+    nodes[rootId] = {
+      id: rootId,
+      stepIndex: 0,
+      timestamp: steps[0]?.timestamp || new Date().toISOString(),
+      parentId: null,
+      childrenIds: [],
+      type: 'ROOT',
+      label: 'Goal Specification',
+      summary: rootSummary,
+      rationale: declaredIntent.userGoal,
+      filesTouched: declaredIntent.plannedFiles,
+      status: 'SUCCESS',
+      steeringNudge: `Focus purely on declared goal: "${declaredIntent.userGoal}". Planned scope: ${declaredIntent.plannedFiles.join(', ') || 'Self-contained'}.`
+    };
+
+    let currentNodeId = rootId;
+
+    // Map subagents by stepIndex
+    const subagentByStep: Record<number, { role: string; type: string; prompt: string }> = {};
+    for (const sub of subagents) {
+      subagentByStep[sub.stepIndex] = sub;
+    }
+
+    // Map file events by stepIndex
+    const fileEventsByStep: Record<number, Array<{ action: string; path: string }>> = {};
+    for (const fe of fileEvents) {
+      if (!fileEventsByStep[fe.stepIndex]) fileEventsByStep[fe.stepIndex] = [];
+      fileEventsByStep[fe.stepIndex].push(fe);
+    }
+
+    // Track previously touched files to detect out-of-scope spill
+    const plannedSet = new Set(declaredIntent.plannedFiles.map(f => path.basename(f).toLowerCase()));
+
+    // 2. Iterate through steps and extract decision nodes
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const stepIdx = step.stepIndex ?? i;
+      const sub = subagentByStep[stepIdx];
+      const stepFiles = fileEventsByStep[stepIdx] || [];
+      const touchedBases = stepFiles.map(f => path.basename(f.path));
+
+      // Check if this step is a Subagent delegation
+      if (sub) {
+        totalBranches++;
+        const subId = `node-subagent-${stepIdx}`;
+        nodes[subId] = {
+          id: subId,
+          stepIndex: stepIdx,
+          timestamp: step.timestamp,
+          parentId: currentNodeId,
+          childrenIds: [],
+          type: 'SUBAGENT',
+          label: `Subagent: ${sub.role || sub.type}`,
+          summary: sub.prompt.length > 140 ? sub.prompt.substring(0, 137) + '...' : sub.prompt,
+          rationale: `Delegated sub-task to specialized ${sub.type} subagent.`,
+          filesTouched: touchedBases,
+          status: 'SUCCESS',
+          steeringNudge: `Resume control from subagent delegation at step #${stepIdx}. Focus on integrating subagent findings.`
+        };
+        nodes[currentNodeId].childrenIds.push(subId);
+        currentNodeId = subId;
+        continue;
+      }
+
+      // Check if this step had an error or retry
+      const hasError = step.status === 'ERROR' || (step.content && step.content.toLowerCase().includes('error:'));
+      if (hasError) {
+        pivotsCount++;
+        totalBranches++;
+        const pivotId = `node-pivot-${stepIdx}`;
+        const errSummary = (step.content || 'Execution error encountered; agent initiated fallback pivot.')
+          .split('\n')[0].substring(0, 120);
+
+        nodes[pivotId] = {
+          id: pivotId,
+          stepIndex: stepIdx,
+          timestamp: step.timestamp,
+          parentId: currentNodeId,
+          childrenIds: [],
+          type: 'PIVOT_RETRY',
+          label: `Pivot / Fallback (Step #${stepIdx})`,
+          summary: errSummary,
+          rationale: step.thinking ? step.thinking.substring(0, 200) + '...' : 'Agent encountered unexpected condition and branched.',
+          filesTouched: touchedBases,
+          status: 'WARNING',
+          steeringNudge: `Rewind to error step #${stepIdx}. Alternative suggested: avoid previous failing command, verify file paths and types before executing.`
+        };
+        nodes[currentNodeId].childrenIds.push(pivotId);
+        currentNodeId = pivotId;
+        continue;
+      }
+
+      // Check for Scope Spill event
+      if (declaredIntent.hasPlan && touchedBases.length > 0) {
+        const unplanned = touchedBases.filter(b => !plannedSet.has(b.toLowerCase()));
+        if (unplanned.length > 0) {
+          spillsCount++;
+          const spillId = `node-spill-${stepIdx}`;
+          nodes[spillId] = {
+            id: spillId,
+            stepIndex: stepIdx,
+            timestamp: step.timestamp,
+            parentId: currentNodeId,
+            childrenIds: [],
+            type: 'SPILL_ALERT',
+            label: `Scope Spill: ${unplanned[0]}`,
+            summary: `Agent touched unplanned file(s): ${unplanned.join(', ')}.`,
+            rationale: step.thinking ? step.thinking.substring(0, 200) + '...' : 'Unplanned scope mutation detected.',
+            filesTouched: touchedBases,
+            status: 'FAILED',
+            steeringNudge: `You modified "${unplanned.join(', ')}" which was never part of implementation_plan.md. Revert changes to this file immediately and restrict edits strictly to planned files.`
+          };
+          nodes[currentNodeId].childrenIds.push(spillId);
+          currentNodeId = spillId;
+          continue;
+        }
+      }
+
+      // Capture Milestones (significant file writes or every 10 steps)
+      const hasFileWrite = stepFiles.some(f => f.action === 'EDIT' || f.action === 'WRITE' || f.action === 'NEW');
+      if (hasFileWrite || stepIdx % 10 === 0 || i === steps.length - 1) {
+        const milestoneId = `node-step-${stepIdx}`;
+        let label = `Step #${stepIdx}`;
+        if (hasFileWrite) {
+          label = `Edit: ${touchedBases[0] || 'Code'}`;
+        } else if (i === steps.length - 1) {
+          label = `Completed (Step #${stepIdx})`;
+        }
+
+        const thinkingSummary = step.thinking
+          ? step.thinking.split('\n')[0].substring(0, 120)
+          : (step.toolCalls?.[0]?.summary || `Agent executed ${step.toolCalls?.[0]?.toolName || 'action'}`);
+
+        nodes[milestoneId] = {
+          id: milestoneId,
+          stepIndex: stepIdx,
+          timestamp: step.timestamp,
+          parentId: currentNodeId,
+          childrenIds: [],
+          type: 'MILESTONE',
+          label,
+          summary: thinkingSummary,
+          rationale: step.thinking ? step.thinking.substring(0, 200) : undefined,
+          filesTouched: touchedBases,
+          status: 'SUCCESS',
+          steeringNudge: `Fork from Step #${stepIdx}. Continue from state where ${label} was completed.`
+        };
+        nodes[currentNodeId].childrenIds.push(milestoneId);
+        currentNodeId = milestoneId;
+      }
+    }
+
+    return {
+      rootId,
+      nodes,
+      totalBranches,
+      pivotsCount,
+      spillsCount
+    };
+  }
+
+  /**
+   * Evaluates a real-time/proposed tool action against Declared Intent and Active Policy.
+   * If a breach occurs, returns a LiveInterceptEvent to trip the Circuit Breaker.
+   */
+  public static evaluateRealTimeAction(
+    action: {
+      stepIndex: number;
+      toolName: string;
+      filePath?: string;
+      command?: string;
+      codeContent?: string;
+      targetContent?: string;
+      replacementContent?: string;
+    },
+    declaredIntent: DeclaredIntent,
+    policy: CircuitBreakerPolicy
+  ): LiveInterceptEvent | null {
+    const timestamp = new Date().toISOString();
+
+    // 1. Check Blocked Shell Commands
+    if (action.command) {
+      for (const blocked of policy.blockedCommands) {
+        if (action.command.toLowerCase().includes(blocked.toLowerCase())) {
+          return {
+            stepIndex: action.stepIndex,
+            timestamp,
+            command: action.command,
+            severity: 'CRITICAL',
+            reason: `Circuit Breaker: Prohibited command pattern detected ("${blocked}").`,
+            suggestedAction: `Execution blocked. Do not run destructive or high-risk shell commands without explicit human oversight.`,
+            revertCommand: `echo "Command was intercepted and cancelled."`,
+            steeringNudge: `Refuse to execute dangerous command "${action.command}". Use non-destructive, scoped alternatives.`
+          };
+        }
+      }
+    }
+
+    // 2. Check Destructive File Shrink
+    if (action.targetContent && (action.replacementContent !== undefined || action.codeContent !== undefined)) {
+      const origLines = action.targetContent.split('\n').length;
+      const newLines = (action.replacementContent || action.codeContent || '').split('\n').length;
+      const threshold = 1 - (policy.shrinkThresholdPercent / 100);
+      if (origLines > 35 && newLines < origLines * threshold) {
+        const baseName = action.filePath ? path.basename(action.filePath) : 'file';
+        const reductionPct = Math.round((1 - newLines / origLines) * 100);
+        return {
+          stepIndex: action.stepIndex,
+          timestamp,
+          filePath: action.filePath,
+          severity: 'CRITICAL',
+          reason: `Circuit Breaker: Destructive file shrink detected on "${baseName}" (${reductionPct}% line reduction from ${origLines} to ${newLines}).`,
+          suggestedAction: `Block or revert modification to prevent catastrophic code loss.`,
+          revertCommand: action.filePath ? `git checkout HEAD -- "${action.filePath}"` : undefined,
+          steeringNudge: `You just attempted to delete ${reductionPct}% of "${baseName}". Make surgical edits using targeted replacement chunks rather than replacing large codeblocks.`
+        };
+      }
+    }
+
+    // 3. Check Scope Spill vs Declared Plan
+    if (action.filePath && declaredIntent.hasPlan && policy.enforcementMode !== 'PERMISSIVE') {
+      const baseName = path.basename(action.filePath).toLowerCase();
+      const isPlanned = declaredIntent.plannedFiles.some(
+        p => path.basename(p).toLowerCase() === baseName || action.filePath?.includes(p)
+      );
+
+      if (!isPlanned) {
+        const severity = policy.enforcementMode === 'STRICT' ? 'CRITICAL' : 'WARNING';
+        return {
+          stepIndex: action.stepIndex,
+          timestamp,
+          filePath: action.filePath,
+          severity,
+          reason: `Scope Spill: "${path.basename(action.filePath)}" was modified but was never declared in implementation_plan.md.`,
+          suggestedAction: `Choose whether to authorize this file into the plan, revert changes, or steer the agent away.`,
+          revertCommand: `git checkout HEAD -- "${action.filePath}"`,
+          steeringNudge: `Your declared implementation plan does NOT include "${path.basename(action.filePath)}". Cease modifications to this file and focus only on: ${declaredIntent.plannedFiles.join(', ')}.`
+        };
+      }
+    }
+
+    return null;
   }
 }

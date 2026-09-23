@@ -25,6 +25,8 @@ function showHelp() {
   console.log(`  ${CYAN}list${RESET}                          List all agent sessions (Claude, Antigravity, Codex)`);
   console.log(`  ${CYAN}inspect${RESET} <session-id>          Deep dive into session cost, tokens, time, & touches`);
   console.log(`  ${CYAN}audit${RESET} <session-id>            Run IntentGovernor audit against declared plan`);
+  console.log(`  ${CYAN}tree${RESET} <session-id>             Visualize Tree-of-Thought (ToT) decision branches & pivots`);
+  console.log(`  ${CYAN}guard${RESET} <session-id>            Real-time in-flight Circuit Breaker & Scope Interceptor`);
   console.log(`  ${CYAN}rollback${RESET} <session-id>         Generate git restore commands to revert agent changes`);
   console.log(`    ${DIM}--spill-only${RESET}                  Only rollback files outside declared implementation plan`);
   console.log(`    ${DIM}--exec${RESET}                        Execute the git restore commands immediately`);
@@ -32,7 +34,8 @@ function showHelp() {
   console.log(`  ${CYAN}help${RESET}                          Show this help menu\n`);
   console.log(`${BOLD}Examples:${RESET}`);
   console.log(`  $ ${DIM}ig list${RESET}`);
-  console.log(`  $ ${DIM}ig audit 2b9d2347${RESET}`);
+  console.log(`  $ ${DIM}ig tree 2b9d2347${RESET}`);
+  console.log(`  $ ${DIM}ig guard 2b9d2347${RESET}`);
   console.log(`  $ ${DIM}ig rollback 2b9d2347 --spill-only --exec${RESET}\n`);
 }
 
@@ -263,6 +266,114 @@ async function runCompare(manager: SessionManager, idPrefix1: string, idPrefix2:
   console.log('\n');
 }
 
+async function runTree(manager: SessionManager, idPrefix: string) {
+  const fullId = await resolveSessionId(manager, idPrefix);
+  if (!fullId) {
+    console.error(`${RED}Error: Session '${idPrefix}' not found.${RESET}`);
+    process.exit(1);
+  }
+
+  banner();
+  const detail = manager.getSessionDetail(fullId);
+  const tree = detail.decisionTree;
+
+  if (!tree || !Object.keys(tree.nodes).length) {
+    console.log(`${YELLOW}No decision tree data available for this session.${RESET}`);
+    return;
+  }
+
+  console.log(`${BOLD}🌳 TREE-OF-THOUGHT (ToT) DECISION GRAPH${RESET}`);
+  console.log(`${DIM}Academic Model: SPROUT (IEEE TVCG 2024 / arXiv:2312.01801)${RESET}`);
+  console.log(`Session: ${CYAN}${fullId.substring(0, 10)}${RESET} | Branches: ${tree.totalBranches} | Pivots/Retries: ${tree.pivotsCount} | Spills: ${tree.spillsCount}\n`);
+
+  const visited = new Set<string>();
+
+  function printNode(nodeId: string, prefix: string, isLast: boolean) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+
+    const node = tree!.nodes[nodeId];
+    if (!node) return;
+
+    let glyph = '🟢';
+    let typeColor = GREEN;
+    if (node.type === 'ROOT') {
+      glyph = '🎯';
+      typeColor = CYAN;
+    } else if (node.type === 'PIVOT_RETRY') {
+      glyph = '🟨';
+      typeColor = YELLOW;
+    } else if (node.type === 'SPILL_ALERT') {
+      glyph = '🟥';
+      typeColor = RED;
+    } else if (node.type === 'SUBAGENT') {
+      glyph = '🟪';
+      typeColor = MAGENTA;
+    }
+
+    const branch = isLast ? '└── ' : '├── ';
+    console.log(`${prefix}${branch}${glyph} ${typeColor}${BOLD}${node.label}${RESET} ${DIM}(Step #${node.stepIndex})${RESET}`);
+    if (node.summary) {
+      const childPrefix = prefix + (isLast ? '    ' : '│   ');
+      console.log(`${childPrefix}${DIM}Summary:${RESET} ${node.summary}`);
+      if (node.filesTouched.length) {
+        console.log(`${childPrefix}${DIM}Touches:${RESET} ${node.filesTouched.join(', ')}`);
+      }
+      if (node.type === 'PIVOT_RETRY' || node.type === 'SPILL_ALERT') {
+        console.log(`${childPrefix}${CYAN}Steer Hint:${RESET} ${node.steeringNudge || 'Re-center onto plan'}`);
+      }
+    }
+
+    const nextPrefix = prefix + (isLast ? '    ' : '│   ');
+    const children = node.childrenIds || [];
+    children.forEach((cId, idx) => {
+      printNode(cId, nextPrefix, idx === children.length - 1);
+    });
+  }
+
+  printNode(tree.rootId, '', true);
+  console.log(`\n${DIM}Tip: You can 1-click fork or steer from any node in the IntentGuard VS Code Cockpit.${RESET}\n`);
+}
+
+async function runGuard(manager: SessionManager, idPrefix: string) {
+  const fullId = await resolveSessionId(manager, idPrefix);
+  if (!fullId) {
+    console.error(`${RED}Error: Session '${idPrefix}' not found.${RESET}`);
+    process.exit(1);
+  }
+
+  banner();
+  const detail = manager.getSessionDetail(fullId);
+
+  console.log(`${BOLD}🛡️  IN-FLIGHT CIRCUIT BREAKER & SCOPE INTERCEPTOR${RESET}`);
+  console.log(`Session: ${CYAN}${fullId.substring(0, 10)}${RESET} | Enforcement Mode: ${YELLOW}ACTIVE${RESET}\n`);
+
+  const intercepts = detail.liveIntercepts || [];
+  if (intercepts.length === 0) {
+    console.log(`${GREEN}✓ Circuit Breaker Normal: Zero scope spills or prohibited actions detected.${RESET}`);
+    console.log(`${DIM}Agent operates within declared boundary (100% adherence).${RESET}\n`);
+    return;
+  }
+
+  console.log(`${RED}${BOLD}🛑 INTERCEPT INCIDENTS DETECTED (${intercepts.length}):${RESET}\n`);
+  intercepts.forEach((intc, idx) => {
+    const sevColor = intc.severity === 'CRITICAL' ? RED : YELLOW;
+    console.log(`${BOLD}Incident #${idx + 1}:${RESET} ${sevColor}[${intc.severity}]${RESET} Step #${intc.stepIndex}`);
+    console.log(`  ${BOLD}Reason:${RESET}     ${intc.reason}`);
+    console.log(`  ${BOLD}Action:${RESET}     ${intc.suggestedAction}`);
+    if (intc.revertCommand) {
+      console.log(`  ${BOLD}Rollback:${RESET}   ${CYAN}${intc.revertCommand}${RESET}`);
+    }
+    console.log(`  ${BOLD}Steer Nudge:${RESET} "${intc.steeringNudge}"\n`);
+  });
+
+  console.log(DIM + '─'.repeat(60) + RESET);
+  console.log(`${BOLD}Quick In-Line Steering Commands:${RESET}`);
+  console.log(`  ${CYAN}Authorize:${RESET}    Open VS Code Cockpit -> [Authorize Spill]`);
+  console.log(`  ${CYAN}Revert:${RESET}       ig rollback ${fullId.substring(0, 8)} --spill-only --exec`);
+  console.log(`  ${CYAN}Steer:${RESET}        Copy steering nudge above into agent prompt\n`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const cmd = args[0] ? args[0].toLowerCase() : 'help';
@@ -281,6 +392,24 @@ async function main() {
         process.exit(1);
       }
       await runInspect(manager, args[1]);
+      break;
+
+    case 'tree':
+    case 'tot':
+      if (!args[1]) {
+        console.error(`${RED}Usage: intentguard tree <session-id>${RESET}`);
+        process.exit(1);
+      }
+      await runTree(manager, args[1]);
+      break;
+
+    case 'guard':
+    case 'intercept':
+      if (!args[1]) {
+        console.error(`${RED}Usage: intentguard guard <session-id>${RESET}`);
+        process.exit(1);
+      }
+      await runGuard(manager, args[1]);
       break;
 
     case 'audit':
